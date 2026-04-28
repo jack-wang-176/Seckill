@@ -1,0 +1,51 @@
+package database
+
+import (
+	"fmt"
+	"log"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+var DB *gorm.DB
+
+type User struct {
+	gorm.Model          // 自动包含 ID, CreatedAt, UpdatedAt, DeletedAt
+	Username     string `gorm:"type:varchar(50);not null;uniqueIndex"`
+	PasswordHash string `gorm:"type:varchar(255);not null"`
+}
+
+type Product struct {
+	gorm.Model
+	Name      string  `gorm:"type:varchar(100);not null"`
+	Price     float64 `gorm:"type:decimal(10,2);not null"`
+	Stock     int     `gorm:"type:int;not null;default:0"`
+	Version   int     `gorm:"type:int;not null;default:0"` // 乐观锁版本号
+	StartTime int64   `gorm:"type:bigint;not null"`        // 推荐用时间戳存储
+	EndTime   int64   `gorm:"type:bigint;not null"`
+}
+
+type Order struct {
+	gorm.Model
+	OrderNo   string `gorm:"type:varchar(64);not null;uniqueIndex"`
+	UserID    uint   `gorm:"not null;uniqueIndex:idx_user_product"` // 联合唯一索引兜底防重复
+	ProductID uint   `gorm:"not null;uniqueIndex:idx_user_product"`
+	Status    int8   `gorm:"type:tinyint;not null;default:0"` // 0-排队中, 1-成功, 2-失败
+}
+
+func InitMYSQL(dsn string) {
+	var err error
+	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+		SkipDefaultTransaction: true,
+		PrepareStmt:            true,
+	})
+	if err != nil {
+		log.Fatalf("Mysql 数据库连接失败 %v", err)
+	}
+	err = DB.AutoMigrate(&User{}, &Product{}, &Order{})
+	if err != nil {
+		log.Fatalf("数据库表创建失败:%v", err)
+	}
+	fmt.Println("MySQL 初始化且表结构同步成功！")
+}
