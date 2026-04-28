@@ -3,8 +3,9 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
 
+	"full_backend_practice/pkg/logger"
+	"go.uber.org/zap"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -20,10 +21,11 @@ func InitRedis(addr string, password string, db int) {
 	})
 	_, err := Client.Ping(ctx).Result()
 	if err != nil {
-		log.Fatalf("redis init err: %v", err)
+		logger.Log.Fatal("redis init err", zap.Error(err))
 	}
-	fmt.Println("redis init success")
+	logger.Log.Info("redis init success")
 }
+
 func PreHeatStock(productID uint, stock int) error {
 	key := fmt.Sprintf("skill:stock:product:%d", productID)
 	err := Client.Set(ctx, key, stock, 0).Err()
@@ -32,6 +34,7 @@ func PreHeatStock(productID uint, stock int) error {
 	}
 	return nil
 }
+
 func SimpleDecrStock(productID uint) (bool, error) {
 	key := fmt.Sprintf("seckill:stock:%d", productID)
 	remain, err := Client.Decr(ctx, key).Result()

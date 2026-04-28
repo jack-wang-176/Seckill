@@ -2,10 +2,11 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"full_backend_practice/backend/internal/app/rpc"
 	"full_backend_practice/kitex_gen/order"
+	"full_backend_practice/pkg/logger"
 	"strconv"
+	"go.uber.org/zap"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/utils"
@@ -38,6 +39,7 @@ func CreateOrder(c context.Context, ctx *app.RequestContext) {
 		ProductId: productID,
 	})
 	if err != nil {
+		logger.Log.Error("RPC OrderClient error", zap.Error(err))
 		ctx.JSON(consts.StatusInternalServerError, utils.H{
 			"msg":  err.Error(),
 			"code": consts.StatusInternalServerError,
@@ -45,7 +47,7 @@ func CreateOrder(c context.Context, ctx *app.RequestContext) {
 		return
 	}
 
-	fmt.Printf("[网关层] 接收到下单请求 -> UserID: %d, ProductID: %d\n", userID, req.ProductId)
+	logger.Log.Info("网关层接收到下单请求", zap.Int64("UserID", userID), zap.String("ProductID", req.ProductId))
 
 	ctx.JSON(consts.StatusOK, map[string]interface{}{
 		"code": resp.BaseResp.Code,

@@ -1,9 +1,9 @@
 package database
 
 import (
-	"fmt"
-	"log"
+	"full_backend_practice/pkg/logger"
 
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -11,7 +11,7 @@ import (
 var DB *gorm.DB
 
 type User struct {
-	gorm.Model          // 自动包含 ID, CreatedAt, UpdatedAt, DeletedAt
+	gorm.Model
 	Username     string `gorm:"type:varchar(50);not null;uniqueIndex"`
 	PasswordHash string `gorm:"type:varchar(255);not null"`
 }
@@ -29,7 +29,7 @@ type Product struct {
 type Order struct {
 	gorm.Model
 	OrderNo   string `gorm:"type:varchar(64);not null;uniqueIndex"`
-	UserID    uint   `gorm:"not null;uniqueIndex:idx_user_product"` // 联合唯一索引兜底防重复
+	UserID    uint   `gorm:"not null;uniqueIndex:idx_user_product"` // 联合 唯一索引兜底防重复
 	ProductID uint   `gorm:"not null;uniqueIndex:idx_user_product"`
 	Status    int8   `gorm:"type:tinyint;not null;default:0"` // 0-排队中, 1-成功, 2-失败
 }
@@ -41,11 +41,11 @@ func InitMYSQL(dsn string) {
 		PrepareStmt:            true,
 	})
 	if err != nil {
-		log.Fatalf("Mysql 数据库连接失败 %v", err)
+		logger.Log.Fatal("Mysql 数据库连接失败", zap.Error(err))
 	}
 	err = DB.AutoMigrate(&User{}, &Product{}, &Order{})
 	if err != nil {
-		log.Fatalf("数据库表创建失败:%v", err)
+		logger.Log.Fatal("数据库表创建失败", zap.Error(err))
 	}
-	fmt.Println("MySQL 初始化且表结构同步成功！")
+	logger.Log.Info("MySQL 初始化且表结构同步成功")
 }
