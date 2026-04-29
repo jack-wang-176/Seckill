@@ -7,13 +7,13 @@ import (
 	"full_backend_practice/pkg/logger"
 	"full_backend_practice/pkg/mq"
 
-	"gorm.io/gorm"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
-func StartConsumer() {
-	msgs, err := mq.Channel.Consume(
-		"user_register_queue", "", false, false, false, false, nil,
+func StartRegisterConsumer() {
+	msgs, err := mq.Client.Channel.Consume(
+		"user_register", "", false, false, false, false, nil,
 	)
 	if err != nil {
 		logger.Log.Fatal("MQ consume error", zap.Error(err))

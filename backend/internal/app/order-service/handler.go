@@ -7,8 +7,8 @@ import (
 	"full_backend_practice/kitex_gen/base"
 	"full_backend_practice/kitex_gen/order"
 	"full_backend_practice/pkg/database"
-	"full_backend_practice/pkg/mq"
 	"full_backend_practice/pkg/logger"
+	"full_backend_practice/pkg/mq"
 	"time"
 
 	"github.com/rabbitmq/amqp091-go"
@@ -46,7 +46,7 @@ func (s *OrderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 		resp.BaseResp.Msg = "JSON marshal error"
 		return resp, nil
 	}
-	err = mq.Channel.PublishWithContext(ctx, "", "seckill_order_queue", false, false, amqp091.Publishing{
+	err = mq.Client.Channel.PublishWithContext(ctx, "", "order_seckill", false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
 		Body:         body,
@@ -60,7 +60,7 @@ func (s *OrderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	}
 
 	logger.Log.Info("Order pushed to MQ successfully", zap.String("order_no", orderNod))
-	
+
 	resp.BaseResp.Code = 200
 	resp.BaseResp.Msg = "seckill success"
 	resp.OrderNo = &orderNod

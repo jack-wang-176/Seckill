@@ -30,8 +30,9 @@ func main() {
 	database.InitRedis("127.0.0.1:6379", "", 0)
 	logger.Log.Info("Redis initialized successfully")
 
-	// 3. 初始化 RabbitMQ
-	mq.InitRabbitMQ()
+	etcdEndPoints := []string{"127.0.0.1:2379"}
+	mqUrl, _ := mq.GetConfigFromEtcd(etcdEndPoints, "/config/rbbitmq/order/url")
+	mq.InitRabbitMQ(mqUrl, []string{"order_seckill"})
 	logger.Log.Info("RabbitMQ initialized successfully")
 
 	// 4. 启动 MQ 消费者

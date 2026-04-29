@@ -2,7 +2,7 @@ package router
 
 import (
 	"full_backend_practice/backend/internal/api-gateway/biz/handler"
-	"full_backend_practice/backend/internal/api-gateway/biz/middleware"
+	"full_backend_practice/backend/internal/api-gateway/biz/middleware"	
 
 	"github.com/cloudwego/hertz/pkg/app/server"
 )
@@ -13,6 +13,7 @@ func Register(h *server.Hertz) {
 	userGroup := v1.Group("/user")
 	{
 		userGroup.POST("/register", handler.Register)
+		userGroup.GET("/login",handler.Login)
 	}
 	seckillGroup := v1.Group("/seckill", middleware.AuthMiddleWare())
 	{

@@ -39,3 +39,35 @@ func Register(c context.Context, ctx *app.RequestContext) {
 		"msg":  resp.BaseResp.Msg,
 	})
 }
+func Login(c context.Context, ctx *app.RequestContext) {
+	var req UserRequest
+	if err := ctx.BindAndValidate(&req); err != nil {
+		ctx.JSON(consts.StatusBadRequest, utils.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+	rpcReq := &user.LoginReq{
+		Username: req.Username,
+		Password: req.Password,
+	}
+	resp, err := rpc.UserClient.Login(c, rpcReq)
+	if err != nil {
+		ctx.JSON(consts.StatusInternalServerError, utils.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	// 提取 Kitex 返回的 Token
+	var tokenStr string
+	if resp.Token != nil {
+		tokenStr = *resp.Token
+	}
+
+	ctx.JSON(consts.StatusOK, utils.H{
+		"code":  resp.BaseResp.Code,
+		"msg":   resp.BaseResp.Msg,
+		"token": tokenStr,
+	})
+}

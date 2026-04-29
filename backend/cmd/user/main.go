@@ -24,10 +24,12 @@ func main() {
 	database.InitRedis("127.0.0.1:6379", "", 0)
 	logger.Log.Info("Redis initialized successfully")
 
-	mq.InitRabbitMQ()
+	etcdEndPoints := []string{"127.0.0.1:2379"}
+	mqUrl, _ := mq.GetConfigFromEtcd(etcdEndPoints, "/config/rbbitmq/user/url")
+	mq.InitRabbitMQ(mqUrl, []string{"user_register"})
 	logger.Log.Info("RabbitMQ initialized successfully")
 
-	user_service.StartConsumer()
+	user_service.StartRegisterConsumer()
 	logger.Log.Info("User Consumer started, listening for messages...")
 
 	r, err := etcd.NewEtcdRegistry([]string{"127.0.0.1:2379"})
@@ -39,10 +41,10 @@ func main() {
 
 	svr := userservice.NewServer(
 		new(user_service.UserServiceImpl),
-		server.WithServiceAddr(addr),                 
-		server.WithRegistry(r),                       
+		server.WithServiceAddr(addr),
+		server.WithRegistry(r),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{
-			ServiceName: "user-service",         
+			ServiceName: "user-service",
 		}),
 	)
 

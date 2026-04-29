@@ -6,9 +6,13 @@ import (
 	"fmt"
 	"full_backend_practice/kitex_gen/base"
 	"full_backend_practice/kitex_gen/user"
+	"full_backend_practice/pkg/database"
+	"full_backend_practice/pkg/logger"
 	"full_backend_practice/pkg/mq"
+	"full_backend_practice/pkg/token"
 
 	"github.com/rabbitmq/amqp091-go"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -45,7 +49,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		resp.BaseResp.Msg = fmt.Sprintf("marshal error: %v", err)
 		return resp, nil
 	}
-	err = mq.Channel.PublishWithContext(ctx, "", "user_register_queue", false, false, amqp091.Publishing{
+	err = mq.Client.Channel.PublishWithContext(ctx, "", "user_register", false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
 		Body:         body,
@@ -65,7 +69,42 @@ func (s *UserServiceImpl) Login(ctx context.Context, req *user.LoginReq) (resp *
 	resp = new(user.LoginResp)
 	resp.BaseResp = &base.BaseResp{}
 
-	// TODO: 在这里编写你的登录业务逻辑（例如查询数据库、生成和验证分发 JWT Token）
+	if req.Username == "" || req.Password == "" {
+		resp.BaseResp.Code = 400
+		resp.BaseResp.Msg = "username and password required"
+		return resp, nil
+	}
 
+	// 1. 同步查询数据库校验用户是否存在
+	var u database.User
+	err = database.DB.Where("username = ?", req.Username).First(&u).Error
+	if err != nil {
+		logger.Log.Warn("login failed: user not found", zap.String("username", req.Username))
+		resp.BaseResp.Code = 401
+		resp.BaseResp.Msg = "invalid username or password"
+		return resp, nil
+	}
+
+	// 2. 校验密码哈希是否匹配
+	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password))
+	if err != nil {
+		logger.Log.Warn("login failed: incorrect password", zap.String("username", req.Username))
+		resp.BaseResp.Code = 401
+		resp.BaseResp.Msg = "invalid username or password"
+		return resp, nil
+	}
+
+	// 3. 生成 JWT Token
+	accessToken, _, err := token.TokenCreate(&u)
+	if err != nil {
+		logger.Log.Error("login failed: fail to create token", zap.Error(err))
+		resp.BaseResp.Code = 500
+		resp.BaseResp.Msg = "fail to generate token"
+		return resp, nil
+	}
+
+	resp.BaseResp.Code = 200
+	resp.BaseResp.Msg = "success to login"
+	resp.Token = &accessToken // 携带生成的 Token 返回给调用方
 	return resp, nil
 }
