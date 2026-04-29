@@ -3,14 +3,17 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"strings"
+
+	token "full_backend_practice/pkg/token"
 
 	"github.com/cloudwego/hertz/pkg/app"
 )
 
 func AuthMiddleWare() app.HandlerFunc {
 	return func(c context.Context, ctx *app.RequestContext) {
-		token := ctx.Request.Header.Get("Authorization")
-		if token == "" {
+		authHeader := ctx.Request.Header.Get("Authorization")
+		if authHeader == "" {
 			ctx.JSON(http.StatusUnauthorized, map[string]interface{}{
 				"code": 401,
 				"msg":  "未授权，请先登录",
@@ -19,11 +22,25 @@ func AuthMiddleWare() app.HandlerFunc {
 			return
 		}
 
-		// [模拟鉴权逻辑]：在真实的业务中，这里应该解析 JWT token 拿到 UserID
-		// 为了使通用接口可以跑通并打通后台组件，我们这里设定固定的测试账号 UserID: 10001
-		ctx.Set("user_id", int64(10001))
-
-		// 验证通过，继续执行下一个 Handler (如 CreateOrder)
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			ctx.JSON(http.StatusUnauthorized, map[string]interface{}{
+				"code": 401,
+				"msg":  "Token 格式错误",
+			})
+			ctx.Abort()
+			return
+		}
+		claims, err := token.ParseToken(parts[1], token.AccessSecret)
+		if err != nil {
+			ctx.JSON(http.StatusUnauthorized, map[string]interface{}{
+				"code": 401,
+				"msg":  "Token 无效",
+			})
+			ctx.Abort()
+			return
+		}
+		ctx.Set("user_id", claims.UserID)
 		ctx.Next(c)
 	}
 }
