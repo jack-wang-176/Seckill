@@ -6,11 +6,26 @@ import (
 	"full_backend_practice/pkg/mq"
 	"log"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
-func StartConsumer() {
-	msgs, err := mq.Client.Channel.Consume(
+type OrderConsumer struct {
+	DB     *gorm.DB
+	MQ     *mq.RabbitClient
+	Logger *zap.Logger
+}
+
+func NewOrderService(db *gorm.DB, mq *mq.RabbitClient, log *zap.Logger) *OrderConsumer {
+	return &OrderConsumer{
+		DB:     db,
+		MQ:     mq,
+		Logger: log,
+	}
+}
+
+func (o *OrderConsumer) StartConsumer() {
+	msgs, err := o.MQ.Channel.Consume(
 		"order_seckill", "", false, false, false, false, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -27,7 +42,7 @@ func StartConsumer() {
 			}
 
 			// 修复 2：去掉 Transaction 结尾多余的 ()
-			err := database.DB.Transaction(func(tx *gorm.DB) error {
+			err := o.DB.Transaction(func(tx *gorm.DB) error {
 				res := tx.Model(&database.Product{}).
 					Where("id = ? AND stock > 0", msg.ProductID).
 					Update("stock", gorm.Expr("stock - 1"))

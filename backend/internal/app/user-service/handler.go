@@ -14,9 +14,13 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
-type UserServiceImpl struct{}
+type UserServiceImpl struct{
+	
+}
+
 
 // Register 用户注册接口，异步写入 MQ，密码加密
 func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (resp *user.RegisterResp, err error) {

@@ -13,22 +13,37 @@ import (
 
 	"github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
-type OrderServiceImpl struct{}
+type OrderServiceImpl struct {
+	DB           *gorm.DB
+	RedisWrapper *database.RedisWrapper
+	MQ           *mq.RabbitClient
+	Logger       *zap.Logger
+}
+
+func NewOrderServiceImpl(db *gorm.DB, rw *database.RedisWrapper, mq *mq.RabbitClient, logger *zap.Logger) *OrderServiceImpl {
+	return &OrderServiceImpl{
+		DB:           db,
+		RedisWrapper: rw,
+		MQ:           mq,
+		Logger:       logger,
+	}
+}
 
 func (s *OrderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (resp *order.SeckillResp, err error) {
 	resp = new(order.SeckillResp)
 	resp.BaseResp = &base.BaseResp{}
-	success, err := database.SimpleDecrStock(uint(req.ProductId))
+	success, err := s.RedisWrapper.SimpleDecrStock(uint(req.ProductId))
 	if err != nil {
-		logger.Log.Error("Redis Decr Stock Error", zap.Error(err))
+		s.Logger.Error("Redis Decr Stock Error", zap.Error(err))
 		resp.BaseResp.Code = 500
 		resp.BaseResp.Msg = err.Error()
 		return resp, nil
 	}
 	if !success {
-		logger.Log.Warn("Stock sold out", zap.Int64("ProductID", req.ProductId))
+		s.Logger.Warn("Stock sold out", zap.Int64("ProductID", req.ProductId))
 		resp.BaseResp.Code = 500
 		resp.BaseResp.Msg = "sell out"
 		return resp, nil
@@ -46,14 +61,14 @@ func (s *OrderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 		resp.BaseResp.Msg = "JSON marshal error"
 		return resp, nil
 	}
-	err = mq.Client.Channel.PublishWithContext(ctx, "", "order_seckill", false, false, amqp091.Publishing{
+	err = s.MQ.Channel.PublishWithContext(ctx, "", "order_seckill", false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
 		Body:         body,
 	})
 	if err != nil {
 		logger.Log.Error("RabbitMQ publish error", zap.Error(err))
-		_ = database.Client.Incr(ctx, fmt.Sprintf("seckill:stock:%d", req.ProductId))
+		_ = s.RedisWrapper.Client.Incr(ctx, fmt.Sprintf("seckill:stock:%d", req.ProductId))
 		resp.BaseResp.Code = 500
 		resp.BaseResp.Msg = "fail to seckill order"
 		return resp, nil

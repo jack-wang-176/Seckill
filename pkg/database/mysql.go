@@ -1,6 +1,7 @@
 package database
 
 import (
+	"full_backend_practice/pkg/config"
 	"full_backend_practice/pkg/logger"
 
 	"go.uber.org/zap"
@@ -8,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
+//var DB *gorm.DB
 
 type User struct {
 	gorm.Model
@@ -34,18 +35,19 @@ type Order struct {
 	Status    int8   `gorm:"type:tinyint;not null;default:0"` // 0-排队中, 1-成功, 2-失败
 }
 
-func InitMYSQL(dsn string) {
+func InitMYSQL(cfg *config.MySQLConfig) (*gorm.DB, error) {
 	var err error
-	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
 		SkipDefaultTransaction: true,
 		PrepareStmt:            true,
 	})
 	if err != nil {
 		logger.Log.Fatal("Mysql 数据库连接失败", zap.Error(err))
 	}
-	err = DB.AutoMigrate(&User{}, &Product{}, &Order{})
+	err = db.AutoMigrate(&User{}, &Product{}, &Order{})
 	if err != nil {
 		logger.Log.Fatal("数据库表创建失败", zap.Error(err))
 	}
 	logger.Log.Info("MySQL 初始化且表结构同步成功")
+	return db, nil
 }

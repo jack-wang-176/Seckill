@@ -26,10 +26,11 @@ func main() {
 
 	etcdEndPoints := []string{"127.0.0.1:2379"}
 	mqUrl, _ := mq.GetConfigFromEtcd(etcdEndPoints, "/config/rbbitmq/user/url")
-	mq.InitRabbitMQ(mqUrl, []string{"user_register"})
+	mq.InitRabbitMQ(mqUrl, []string{"user_register", "user_login"})
 	logger.Log.Info("RabbitMQ initialized successfully")
 
 	user_service.StartRegisterConsumer()
+	user_service.StartLoginConsumer()
 	logger.Log.Info("User Consumer started, listening for messages...")
 
 	r, err := etcd.NewEtcdRegistry([]string{"127.0.0.1:2379"})

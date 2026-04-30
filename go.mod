@@ -6,9 +6,11 @@ require (
 	github.com/cloudwego/gopkg v0.2.0
 	github.com/cloudwego/hertz v0.10.4
 	github.com/cloudwego/kitex v0.16.1
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/kitex-contrib/registry-etcd v0.3.0
 	github.com/rabbitmq/amqp091-go v1.11.0
 	github.com/redis/go-redis/v9 v9.18.0
+	go.etcd.io/etcd/client/v3 v3.6.2
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.50.0
 	gorm.io/driver/mysql v1.6.0
@@ -38,7 +40,6 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/pprof v0.0.0-20260402051712-545e8a4df936 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
@@ -61,8 +62,8 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	go.etcd.io/etcd/api/v3 v3.6.2 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.6.2 // indirect
-	go.etcd.io/etcd/client/v3 v3.6.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
+	go.uber.org/dig v1.19.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.26.0 // indirect
 	golang.org/x/net v0.53.0 // indirect

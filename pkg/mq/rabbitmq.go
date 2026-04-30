@@ -1,6 +1,8 @@
 package mq
 
 import (
+	"full_backend_practice/pkg/config"
+
 	"log"
 	"time"
 
@@ -10,7 +12,6 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-var Client *RabbitClient
 
 type SeckillMessage struct {
 	UserID    uint64 `json:"user_id"`
@@ -42,8 +43,8 @@ func GetConfigFromEtcd(endpoins []string, key string) (string, error) {
 	return string(resp.Kvs[0].Value), nil
 }
 
-func InitRabbitMQ(url string, queues []string) {
-	conn, err := amqp091.Dial(url)
+func InitRabbitMQ(cfg *config.RabbitMQConfig) *RabbitClient {
+	conn, err := amqp091.Dial(cfg.URL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +53,7 @@ func InitRabbitMQ(url string, queues []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, queue := range queues {
+	for _, queue := range cfg.Queues {
 		_, err = ch.QueueDeclare(
 			queue, // name
 			true,  // durable
@@ -62,19 +63,20 @@ func InitRabbitMQ(url string, queues []string) {
 			nil,   // arguments
 		)
 	}
-	Client = &RabbitClient{
+	client := &RabbitClient{
 		Conn:    conn,
 		Channel: ch,
 	}
 	log.Println("rabbitmq channel created")
+	return client
 }
-func CloseRabbitMQ() {
-	if Client != nil {
-		if Client.Channel != nil {
-			Client.Channel.Close()
+func CloseRabbitMQ(client *RabbitClient) {
+	if client != nil {
+		if client.Channel != nil {
+			client.Channel.Close()
 		}
-		if Client.Conn != nil {
-			Client.Conn.Close()
+		if client.Conn != nil {
+			client.Conn.Close()
 		}
 	}
 }
