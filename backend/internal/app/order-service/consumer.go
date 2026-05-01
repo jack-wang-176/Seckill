@@ -16,7 +16,7 @@ type OrderConsumer struct {
 	Logger *zap.Logger
 }
 
-func NewOrderService(db *gorm.DB, mq *mq.RabbitClient, log *zap.Logger) *OrderConsumer {
+func NewOrderConsumer(db *gorm.DB, mq *mq.RabbitClient, log *zap.Logger) *OrderConsumer {
 	return &OrderConsumer{
 		DB:     db,
 		MQ:     mq,

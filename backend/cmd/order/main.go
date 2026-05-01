@@ -4,6 +4,7 @@ import (
 	"net"
 
 	order_service "full_backend_practice/backend/internal/app/order-service"
+	"full_backend_practice/kitex_gen/order/orderservice"
 	"full_backend_practice/pkg/config"
 	"full_backend_practice/pkg/database"
 	"full_backend_practice/pkg/logger"
@@ -62,7 +63,7 @@ func main() {
 		log.Info("Starting Application...")
 
 		// 1. 启动消费者协程
-		consumer.Start()
+		consumer.StartConsumer()
 		log.Info("Order Consumer started, listening for messages...")
 
 		// 2. 初始化服务注册
@@ -73,7 +74,7 @@ func main() {
 
 		addr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:8888")
 
-		svr := order_service.NewServer(
+		svr := orderservice.NewServer(
 			impl,
 			server.WithServiceAddr(addr),
 			server.WithRegistry(r),

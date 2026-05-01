@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 
 	"full_backend_practice/pkg/config"
@@ -13,6 +14,18 @@ import (
 
 // var Client *redis.Client
 var ctx = context.Background()
+
+var (
+	preHeatScript   = redis.NewScript(`return redis.call('SET',KEYS[1],ARGV[1])`)
+	decrStockScript *redis.Script
+)
+
+//go:embd scripts/decr_stock.lua
+var decrStockLua string
+
+func init() {
+	decrStockScript = redis.NewScript(decrStockLua)
+}
 
 func InitRedis(cfg *config.RedisConfig) *redis.Client {
 	client := redis.NewClient(&redis.Options{
@@ -28,16 +41,18 @@ func InitRedis(cfg *config.RedisConfig) *redis.Client {
 	logger.Log.Info("redis init success")
 	return client
 }
-type RedisWrapper struct{
+
+type RedisWrapper struct {
 	Client *redis.Client
 }
-func NewRedisWrapper(cli *redis.Client)*RedisWrapper{
+
+func NewRedisWrapper(cli *redis.Client) *RedisWrapper {
 	return &RedisWrapper{Client: cli}
 }
 
 func (rw *RedisWrapper) PreHeatStock(productID uint, stock int) error {
 	key := fmt.Sprintf("skill:stock:product:%d", productID)
-	err := rw.Client.Set(ctx, key, stock, 0).Err()
+	err := preHeatScript.Run(ctx, rw.Client, []string{key}, stock).Err()
 	if err != nil {
 		return fmt.Errorf("redis set err: %v", err)
 	}
@@ -46,12 +61,15 @@ func (rw *RedisWrapper) PreHeatStock(productID uint, stock int) error {
 
 func (rw *RedisWrapper) SimpleDecrStock(productID uint) (bool, error) {
 	key := fmt.Sprintf("seckill:stock:%d", productID)
-	remain, err := rw.Client.Decr(ctx, key).Result()
+	result, err := decrStockScript.Run(ctx, rw.Client, []string{key}).Result()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("lua script execution error: &W", err)
 	}
-	if remain < 0 {
+	if resultInt, ok := result.(int64); ok {
+		if resultInt == 1 {
+			return true, nil
+		}
 		return false, nil
 	}
-	return true, nil
+	return false, fmt.Errorf("unexpected running line")
 }
