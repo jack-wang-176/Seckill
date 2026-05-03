@@ -2,7 +2,7 @@ package token
 
 import (
 	"fmt"
-	"full_backend_practice/pkg/database"
+	"full_backend_practice/pkg/database/mysql"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -19,7 +19,7 @@ var (
 	RefreshSecret = []byte("refresh_secret_example_change_me")
 )
 
-func TokenCreate(user *database.User) (accessToken string, refreshToken string, err error) {
+func TokenCreate(user *mysql.User) (accessToken string, refreshToken string, err error) {
 	now := time.Now()
 	accessClaim := TokenClaim{
 		UserID:   user.ID,

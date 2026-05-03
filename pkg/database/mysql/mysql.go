@@ -1,4 +1,4 @@
-package database
+package mysql
 
 import (
 	"full_backend_practice/pkg/config"

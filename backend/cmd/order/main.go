@@ -6,7 +6,8 @@ import (
 	order_service "full_backend_practice/backend/internal/app/order-service"
 	"full_backend_practice/kitex_gen/order/orderservice"
 	"full_backend_practice/pkg/config"
-	"full_backend_practice/pkg/database"
+	"full_backend_practice/pkg/database/mysql"
+	redis "full_backend_practice/pkg/database/redis"
 	"full_backend_practice/pkg/logger"
 	"full_backend_practice/pkg/mq"
 
@@ -35,17 +36,13 @@ func provideConfigs(c *dig.Container) {
 
 func buildContainer() *dig.Container {
 	c := dig.New()
-
-	// 1. 提供配置
 	provideConfigs(c)
 
-	// 2. 提供基础组件
 	c.Provide(logger.InitLogger)
-	c.Provide(database.InitMYSQL)
-	c.Provide(database.InitRedis)
+	c.Provide(mysql.InitMYSQL)
+	c.Provide(redis.InitRedis)
 	c.Provide(mq.InitRabbitMQ)
 
-	// 3. 提供业务逻辑组件
 	c.Provide(order_service.NewOrderServiceImpl)
 	c.Provide(order_service.NewOrderConsumer)
 
@@ -53,7 +50,6 @@ func buildContainer() *dig.Container {
 }
 
 func main() {
-	//1: 构建依赖注入容器
 	c := buildContainer()
 	err := c.Invoke(func(impl *order_service.OrderServiceImpl,
 		consumer *order_service.OrderConsumer,
@@ -63,11 +59,9 @@ func main() {
 
 		log.Info("Starting Application...")
 
-		// 1. 启动消费者协程
 		consumer.StartConsumer()
 		log.Info("Order Consumer started, listening for messages...")
 
-		// 2. 初始化服务注册
 		r, err := etcd.NewEtcdRegistry(etcdCfg.Endpoints)
 		if err != nil {
 			return err

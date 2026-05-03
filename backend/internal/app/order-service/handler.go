@@ -6,26 +6,26 @@ import (
 	"fmt"
 	"full_backend_practice/kitex_gen/base"
 	"full_backend_practice/kitex_gen/order"
-	"full_backend_practice/pkg/database"
+	"full_backend_practice/pkg/database/mysql"
+	"full_backend_practice/pkg/database/redis"
 	"full_backend_practice/pkg/logger"
 	"full_backend_practice/pkg/mq"
 	"time"
 
 	"github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 type OrderServiceImpl struct {
-	DB           *gorm.DB
-	RedisWrapper *database.RedisWrapper
+	MySqlWrapper *mysql.MySqlWrapper
+	RedisWrapper *redis.RedisWrapper
 	MQ           *mq.RabbitClient
 	Logger       *zap.Logger
 }
 
-func NewOrderServiceImpl(db *gorm.DB, rw *database.RedisWrapper, mq *mq.RabbitClient, logger *zap.Logger) *OrderServiceImpl {
+func NewOrderServiceImpl(mr *mysql.MySqlWrapper, rw *redis.RedisWrapper, mq *mq.RabbitClient, logger *zap.Logger) *OrderServiceImpl {
 	return &OrderServiceImpl{
-		DB:           db,
+		MySqlWrapper: mr,
 		RedisWrapper: rw,
 		MQ:           mq,
 		Logger:       logger,

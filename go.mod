@@ -11,6 +11,7 @@ require (
 	github.com/rabbitmq/amqp091-go v1.11.0
 	github.com/redis/go-redis/v9 v9.18.0
 	go.etcd.io/etcd/client/v3 v3.6.2
+	go.uber.org/dig v1.19.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.50.0
 	gorm.io/driver/mysql v1.6.0
@@ -63,7 +64,6 @@ require (
 	go.etcd.io/etcd/api/v3 v3.6.2 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.6.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	go.uber.org/dig v1.19.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.26.0 // indirect
 	golang.org/x/net v0.53.0 // indirect
