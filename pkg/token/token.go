@@ -48,6 +48,7 @@ func TokenCreate(user *mysql.User) (accessToken string, refreshToken string, err
 	return accessToken, refreshToken, nil
 
 }
+
 func ParseToken(tokenString string, secret []byte) (*TokenClaim, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &TokenClaim{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

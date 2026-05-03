@@ -85,9 +85,7 @@ func (s *UserServiceImpl) Login(ctx context.Context, req *user.LoginReq) (resp *
 		return resp, nil
 	}
 
-	// 1. 同步查询数据库校验用户是否存在
-	var u mysql.User
-	err = s.MySqlWrapper.DB.Where("username = ?", req.Username).First(&u).Error
+	u, err := s.MySqlWrapper.LoginUser(req.Username)
 	if err != nil {
 		s.Logger.Warn("login failed: user not found", zap.String("username", req.Username))
 		resp.BaseResp.Code = 401
@@ -103,7 +101,7 @@ func (s *UserServiceImpl) Login(ctx context.Context, req *user.LoginReq) (resp *
 		return resp, nil
 	}
 
-	accessToken, _, err := token.TokenCreate(&u)
+	accessToken, _, err := token.TokenCreate(u)
 	if err != nil {
 		s.Logger.Error("login failed: fail to create token", zap.Error(err))
 		resp.BaseResp.Code = 500

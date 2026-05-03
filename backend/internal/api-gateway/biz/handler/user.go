@@ -59,7 +59,6 @@ func Login(c context.Context, ctx *app.RequestContext) {
 		return
 	}
 
-	// 提取 Kitex 返回的 Token
 	var tokenStr string
 	if resp.Token != nil {
 		tokenStr = *resp.Token

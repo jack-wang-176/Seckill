@@ -2,12 +2,10 @@ package user_service
 
 import (
 	"encoding/json"
-	"fmt"
 	"full_backend_practice/pkg/database/mysql"
 	"full_backend_practice/pkg/mq"
 
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 type UserConsumer struct {
@@ -39,20 +37,7 @@ func (u *UserConsumer) StartRegisterConsumer() {
 				d.Nack(false, false)
 				continue
 			}
-			err := u.MR.DB.Transaction(func(tx *gorm.DB) error {
-				var user mysql.User
-				err := tx.Model(&mysql.User{}).Where("username = ?", msg.Username).First(&user).Error
-				if err == nil {
-					return fmt.Errorf("username already exists")
-				}
-				if err != gorm.ErrRecordNotFound {
-					return err
-				}
-				return tx.Create(&mysql.User{
-					Username:     msg.Username,
-					PasswordHash: msg.Password,
-				}).Error
-			})
+			err := u.MR.RegisterUser(msg)
 			if err != nil {
 				if err.Error() == "username already exists" {
 					u.Logger.Warn("注册幂等，用户名已存在", zap.String("username", msg.Username))
