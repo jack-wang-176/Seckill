@@ -3,7 +3,7 @@ package main
 import (
 	"net"
 
-	order_service "full_backend_practice/backend/internal/app/order-service"
+	order_service "full_backend_practice/internal/order-service"
 	"full_backend_practice/kitex_gen/order/orderservice"
 	"full_backend_practice/pkg/config"
 	"full_backend_practice/pkg/database/mysql"

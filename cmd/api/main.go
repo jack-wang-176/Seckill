@@ -1,8 +1,8 @@
 package main
 
 import (
-	"full_backend_practice/backend/internal/api-gateway/biz/router"
-	"full_backend_practice/backend/internal/app/rpc"
+	"full_backend_practice/internal/api-gateway/router"
+	"full_backend_practice/internal/rpc"
 	"full_backend_practice/pkg/logger"
 
 	"github.com/cloudwego/hertz/pkg/app/server"

@@ -1,4 +1,4 @@
-package database
+package redis
 
 import (
 	"context"
@@ -63,7 +63,7 @@ func (rw *RedisWrapper) SimpleDecrStock(productID uint) (bool, error) {
 	key := fmt.Sprintf("seckill:stock:%d", productID)
 	result, err := decrStockScript.Run(ctx, rw.Client, []string{key}).Result()
 	if err != nil {
-		return false, fmt.Errorf("lua script execution error: &w", err)
+		return false, fmt.Errorf("lua script execution error: &W", err)
 	}
 	if resultInt, ok := result.(int64); ok {
 		if resultInt == 1 {
