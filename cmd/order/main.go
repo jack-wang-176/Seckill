@@ -3,11 +3,10 @@ package main
 import (
 	"net"
 
-	order_service "full_backend_practice/internal/order-service"
+	order "full_backend_practice/internal/order"
 	"full_backend_practice/kitex_gen/order/orderservice"
 	"full_backend_practice/pkg/config"
-	"full_backend_practice/pkg/database/mysql"
-	redis "full_backend_practice/pkg/database/redis"
+	"full_backend_practice/pkg/database"
 	"full_backend_practice/pkg/logger"
 	"full_backend_practice/pkg/mq"
 
@@ -39,20 +38,20 @@ func buildContainer() *dig.Container {
 	provideConfigs(c)
 
 	c.Provide(logger.InitLogger)
-	c.Provide(mysql.InitMYSQL)
-	c.Provide(redis.InitRedis)
+	c.Provide(database.InitMYSQL)
+	c.Provide(database.InitRedis)
 	c.Provide(mq.InitRabbitMQ)
 
-	c.Provide(order_service.NewOrderServiceImpl)
-	c.Provide(order_service.NewOrderConsumer)
+	c.Provide(order.NewOrderServiceImpl)
+	c.Provide(order.NewOrderConsumer)
 
 	return c
 }
 
 func main() {
 	c := buildContainer()
-	err := c.Invoke(func(impl *order_service.OrderServiceImpl,
-		consumer *order_service.OrderConsumer,
+	err := c.Invoke(func(impl *order.OrderServiceImpl,
+		consumer *order.OrderConsumer,
 		etcdCfg *config.EtcdConfig,
 		log *zap.Logger,
 	) error {

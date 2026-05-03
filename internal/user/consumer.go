@@ -1,20 +1,19 @@
-package user_service
+package user
 
 import (
 	"encoding/json"
-	"full_backend_practice/pkg/database/mysql"
 	"full_backend_practice/pkg/mq"
 
 	"go.uber.org/zap"
 )
 
 type UserConsumer struct {
-	MR     *mysql.MySqlWrapper
+	MR     *UserDBWrapper
 	MQ     *mq.RabbitClient
 	Logger *zap.Logger
 }
 
-func NewConsumer(mr *mysql.MySqlWrapper, mq *mq.RabbitClient, log *zap.Logger) *UserConsumer {
+func NewConsumer(mr *UserDBWrapper, mq *mq.RabbitClient, log *zap.Logger) *UserConsumer {
 	return &UserConsumer{
 		MR:     mr,
 		MQ:     mq,

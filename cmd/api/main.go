@@ -1,7 +1,7 @@
 package main
 
 import (
-	"full_backend_practice/internal/api-gateway/router"
+	"full_backend_practice/internal/api/router"
 	"full_backend_practice/internal/rpc"
 	"full_backend_practice/pkg/logger"
 

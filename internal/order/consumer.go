@@ -1,8 +1,7 @@
-package order_service
+package order
 
 import (
 	"encoding/json"
-	"full_backend_practice/pkg/database/mysql"
 	"full_backend_practice/pkg/mq"
 	"log"
 
@@ -11,16 +10,16 @@ import (
 )
 
 type OrderConsumer struct {
-	MR     *mysql.MySqlWrapper
-	MQ     *mq.RabbitClient
-	Logger *zap.Logger
+	OrderDB *OrderDBWrapper
+	MQ      *mq.RabbitClient
+	Logger  *zap.Logger
 }
 
-func NewOrderConsumer(mr *mysql.MySqlWrapper, mq *mq.RabbitClient, log *zap.Logger) *OrderConsumer {
+func NewOrderConsumer(OrderDB *OrderDBWrapper, mq *mq.RabbitClient, log *zap.Logger) *OrderConsumer {
 	return &OrderConsumer{
-		MR:     mr,
-		MQ:     mq,
-		Logger: log,
+		OrderDB: OrderDB,
+		MQ:      mq,
+		Logger:  log,
 	}
 }
 
@@ -40,7 +39,7 @@ func (o *OrderConsumer) StartConsumer() {
 				continue
 			}
 
-			err := o.MR.SeckillOrder(msg)
+			err := o.OrderDB.SeckillOrder(msg)
 
 			if err != nil {
 				log.Printf("订单处理失败 [订单号:%s]: %v", msg.OrderNo, err)

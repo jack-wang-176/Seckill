@@ -1,4 +1,4 @@
-package user_service
+package user
 
 import (
 	"context"
@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"full_backend_practice/kitex_gen/base"
 	"full_backend_practice/kitex_gen/user"
-	"full_backend_practice/pkg/database/mysql"
-	"full_backend_practice/pkg/database/redis"
+	"full_backend_practice/pkg/database"
 
 	"full_backend_practice/pkg/mq"
 	"full_backend_practice/pkg/token"
@@ -18,13 +17,13 @@ import (
 )
 
 type UserServiceImpl struct {
-	MySqlWrapper *mysql.MySqlWrapper
-	RedisWrapper *redis.RedisWrapper
+	MySqlWrapper *UserDBWrapper
+	RedisWrapper *database.RedisWrapper
 	MQ           *mq.RabbitClient
 	Logger       *zap.Logger
 }
 
-func NewUserServiceImpl(mr *mysql.MySqlWrapper, rw *redis.RedisWrapper, mq *mq.RabbitClient, logger *zap.Logger) *UserServiceImpl {
+func NewUserServiceImpl(mr *UserDBWrapper, rw *database.RedisWrapper, mq *mq.RabbitClient, logger *zap.Logger) *UserServiceImpl {
 	return &UserServiceImpl{
 		MySqlWrapper: mr,
 		RedisWrapper: rw,
@@ -101,7 +100,10 @@ func (s *UserServiceImpl) Login(ctx context.Context, req *user.LoginReq) (resp *
 		return resp, nil
 	}
 
-	accessToken, _, err := token.TokenCreate(u)
+	accessToken, _, err := token.TokenCreate(&token.Payload{
+		UserID:   u.ID,
+		Username: u.Username,
+	})
 	if err != nil {
 		s.Logger.Error("login failed: fail to create token", zap.Error(err))
 		resp.BaseResp.Code = 500

@@ -1,4 +1,4 @@
-package order_service
+package order
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"full_backend_practice/kitex_gen/base"
 	"full_backend_practice/kitex_gen/order"
-	"full_backend_practice/pkg/database/mysql"
-	"full_backend_practice/pkg/database/redis"
+	"full_backend_practice/pkg/database"
+
 	"full_backend_practice/pkg/logger"
 	"full_backend_practice/pkg/mq"
 	"time"
@@ -17,13 +17,13 @@ import (
 )
 
 type OrderServiceImpl struct {
-	MySqlWrapper *mysql.MySqlWrapper
-	RedisWrapper *redis.RedisWrapper
+	MySqlWrapper *OrderDBWrapper
+	RedisWrapper *database.RedisWrapper
 	MQ           *mq.RabbitClient
 	Logger       *zap.Logger
 }
 
-func NewOrderServiceImpl(mr *mysql.MySqlWrapper, rw *redis.RedisWrapper, mq *mq.RabbitClient, logger *zap.Logger) *OrderServiceImpl {
+func NewOrderServiceImpl(mr *OrderDBWrapper, rw *database.RedisWrapper, mq *mq.RabbitClient, logger *zap.Logger) *OrderServiceImpl {
 	return &OrderServiceImpl{
 		MySqlWrapper: mr,
 		RedisWrapper: rw,

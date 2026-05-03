@@ -1,8 +1,8 @@
 package router
 
 import (
-	"full_backend_practice/internal/api-gateway/handler"
-	"full_backend_practice/internal/api-gateway/middleware"
+	"full_backend_practice/internal/api/handler"
+	"full_backend_practice/internal/api/middleware"
 
 	"github.com/cloudwego/hertz/pkg/app/server"
 )
