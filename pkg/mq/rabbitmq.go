@@ -12,7 +12,6 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-
 type SeckillMessage struct {
 	UserID    uint64 `json:"user_id"`
 	ProductID uint64 `json:"product_id"`
@@ -55,12 +54,12 @@ func InitRabbitMQ(cfg *config.RabbitMQConfig) *RabbitClient {
 	}
 	for _, queue := range cfg.Queues {
 		_, err = ch.QueueDeclare(
-			queue, // name
-			true,  // durable
-			false, // delete when unused
-			false, // exclusive
-			false, // no-wait
-			nil,   // arguments
+			queue,
+			true,
+			false,
+			false,
+			false,
+			nil,
 		)
 	}
 	client := &RabbitClient{

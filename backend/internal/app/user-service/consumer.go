@@ -23,7 +23,7 @@ func StartRegisterConsumer() {
 			var msg mq.UserMessage
 			if err := json.Unmarshal(d.Body, &msg); err != nil {
 				logger.Log.Error("fail to parse message", zap.Error(err))
-				d.Nack(false, false) // 丢弃格式错误消息
+				d.Nack(false, false)
 				continue
 			}
 			err := database.DB.Transaction(func(tx *gorm.DB) error {

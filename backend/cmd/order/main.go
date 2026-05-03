@@ -39,7 +39,7 @@ func buildContainer() *dig.Container {
 	// 1. 提供配置
 	provideConfigs(c)
 
-	// 2. 提供基础组件 (注意：不加括号，传入函数名！)
+	// 2. 提供基础组件
 	c.Provide(logger.InitLogger)
 	c.Provide(database.InitMYSQL)
 	c.Provide(database.InitRedis)
@@ -53,6 +53,7 @@ func buildContainer() *dig.Container {
 }
 
 func main() {
+	//1: 构建依赖注入容器
 	c := buildContainer()
 	err := c.Invoke(func(impl *order_service.OrderServiceImpl,
 		consumer *order_service.OrderConsumer,

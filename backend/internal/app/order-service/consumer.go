@@ -36,12 +36,10 @@ func (o *OrderConsumer) StartConsumer() {
 			var msg mq.SeckillMessage
 			if err := json.Unmarshal(d.Body, &msg); err != nil {
 				log.Printf("fail to parse message: %v\n", err)
-				// 消息格式错误，直接丢弃，不要重试
 				d.Nack(false, false)
 				continue
 			}
 
-			// 修复 2：去掉 Transaction 结尾多余的 ()
 			err := o.DB.Transaction(func(tx *gorm.DB) error {
 				res := tx.Model(&database.Product{}).
 					Where("id = ? AND stock > 0", msg.ProductID).
@@ -51,10 +49,9 @@ func (o *OrderConsumer) StartConsumer() {
 					return res.Error
 				}
 				if res.RowsAffected == 0 {
-					return gorm.ErrRecordNotFound // 代表库存不足
+					return gorm.ErrRecordNotFound
 				}
 
-				// 修复 3：使用 fmt.Sprint 适配 int64 类型
 				return tx.Create(&database.Order{
 					OrderNo:   msg.OrderNo,
 					UserID:    uint(msg.UserID),
