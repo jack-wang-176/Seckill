@@ -5,13 +5,12 @@ import (
 	"full_backend_practice/internal/rpc"
 	"full_backend_practice/kitex_gen/order"
 	"full_backend_practice/pkg/logger"
+	"full_backend_practice/pkg/response"
 	"strconv"
 
 	"go.uber.org/zap"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/cloudwego/hertz/pkg/common/utils"
-	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
 
 type SeckillReq struct {
@@ -21,17 +20,13 @@ type SeckillReq struct {
 func CreateOrder(c context.Context, ctx *app.RequestContext) {
 	userIDVal, exists := ctx.Get("user_id")
 	if !exists {
-		ctx.JSON(consts.StatusUnauthorized, utils.H{
-			"msg": "user_id not exists",
-		})
+		response.Error(ctx, 401, "user_id not exists")
 		return
 	}
 	userID := userIDVal.(int64)
 	var req SeckillReq
 	if err := ctx.BindAndValidate(&req); err != nil {
-		ctx.JSON(consts.StatusBadRequest, utils.H{
-			"msg": err.Error(),
-		})
+		response.Error(ctx, 400, err.Error())
 		return
 	}
 	productID, _ := strconv.ParseInt(req.ProductId, 10, 64)
@@ -40,21 +35,29 @@ func CreateOrder(c context.Context, ctx *app.RequestContext) {
 		ProductId: productID,
 	})
 	if err != nil {
-		logger.Log.Error("RPC OrderClient error", zap.Error(err))
-		ctx.JSON(consts.StatusInternalServerError, utils.H{
-			"msg":  err.Error(),
-			"code": consts.StatusInternalServerError,
-		})
+		if lg := logger.GetLogger(); lg != nil {
+			lg.Error("RPC OrderClient error", zap.Error(err))
+		}
+		response.ServerError(ctx, err)
 		return
 	}
 
-	logger.Log.Info("网关层接收到下单请求", zap.Int64("UserID", userID), zap.String("ProductID", req.ProductId))
+	if lg := logger.GetLogger(); lg != nil {
+		lg.Info("网关层接收到下单请求", zap.Int64("UserID", userID), zap.String("ProductID", req.ProductId))
+	}
 
-	ctx.JSON(consts.StatusOK, map[string]interface{}{
-		"code": resp.BaseResp.Code,
-		"msg":  resp.BaseResp.Msg,
-		"data": map[string]interface{}{
-			"order_no": resp.OrderNo,
-		},
+	if resp.BaseResp == nil || resp.BaseResp.Code != response.CodeOK {
+		var msg string
+		if resp.BaseResp != nil {
+			msg = resp.BaseResp.Msg
+		} else {
+			msg = "downstream service error"
+		}
+		response.Error(ctx, int(resp.BaseResp.Code), msg)
+		return
+	}
+
+	response.Success(ctx, map[string]interface{}{
+		"order_no": resp.OrderNo,
 	})
 }

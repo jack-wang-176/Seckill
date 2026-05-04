@@ -10,16 +10,18 @@ import (
 
 func main() {
 
-	logger.InitLogger()
-	logger.Log.Info("Starting API Gateway...")
+	lg := logger.InitLogger()
 
-	rpc.InitOrderRpc()
-	rpc.InitUserRpc()
+	logger.SetLogger(lg)
+	lg.Info("Starting API Gateway...")
+
+	rpc.InitOrderRpc(lg)
+	rpc.InitUserRpc(lg)
 
 	h := server.Default(server.WithHostPorts("0.0.0.0:8080"))
 
 	router.Register(h)
 
-	logger.Log.Info("API Gateway is running on 0.0.0.0:8080...")
+	lg.Info("API Gateway is running on 0.0.0.0:8080...")
 	h.Spin()
 }

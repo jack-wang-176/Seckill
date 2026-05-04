@@ -3,11 +3,10 @@ package main
 import (
 	"net"
 
-	user_service "full_backend_practice/backend/internal/app/user-service"
+	"full_backend_practice/internal/user"
 	"full_backend_practice/kitex_gen/user/userservice"
 	"full_backend_practice/pkg/config"
-	"full_backend_practice/pkg/database/mysql"
-	"full_backend_practice/pkg/database/redis"
+	"full_backend_practice/pkg/database"
 	"full_backend_practice/pkg/logger"
 	"full_backend_practice/pkg/mq"
 
@@ -37,19 +36,19 @@ func buildContainer() *dig.Container {
 	provideConfigs(c)
 
 	c.Provide(logger.InitLogger)
-	c.Provide(mysql.InitMYSQL)
-	c.Provide(redis.InitRedis)
+	c.Provide(database.InitMYSQL)
+	c.Provide(database.InitRedis)
 	c.Provide(mq.InitRabbitMQ)
 
-	c.Provide(user_service.NewUserServiceImpl)
-	c.Provide(user_service.NewConsumer)
+	c.Provide(user.NewUserServiceImpl)
+	c.Provide(user.NewConsumer)
 	return c
 }
 
 func main() {
 	c := buildContainer()
-	err := c.Invoke(func(impl *user_service.UserServiceImpl,
-		consumer *user_service.UserConsumer,
+	err := c.Invoke(func(impl user.UserServiceImpl,
+		consumer user.UserConsumer,
 		etcdCfg *config.EtcdConfig,
 		log *zap.Logger,
 	) error {

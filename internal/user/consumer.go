@@ -7,21 +7,24 @@ import (
 	"go.uber.org/zap"
 )
 
-type UserConsumer struct {
-	MR     *UserDBWrapper
+type UserConsumer interface {
+	StartRegisterConsumer()
+}
+type userConsumer struct {
+	MR     UserDatabase
 	MQ     *mq.RabbitClient
 	Logger *zap.Logger
 }
 
-func NewConsumer(mr *UserDBWrapper, mq *mq.RabbitClient, log *zap.Logger) *UserConsumer {
-	return &UserConsumer{
+func NewConsumer(mr UserDatabase, mq *mq.RabbitClient, log *zap.Logger) UserConsumer {
+	return &userConsumer{
 		MR:     mr,
 		MQ:     mq,
 		Logger: log,
 	}
 }
 
-func (u *UserConsumer) StartRegisterConsumer() {
+func (u *userConsumer) StartRegisterConsumer() {
 	msgs, err := u.MQ.Channel.Consume(
 		"user_register", "", false, false, false, false, nil,
 	)

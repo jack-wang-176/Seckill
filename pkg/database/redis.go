@@ -36,9 +36,13 @@ func InitRedis(cfg *config.RedisConfig) *redis.Client {
 	})
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
-		logger.Log.Fatal("redis init err", zap.Error(err))
+		if lg := logger.GetLogger(); lg != nil {
+			lg.Fatal("redis init err", zap.Error(err))
+		}
 	}
-	logger.Log.Info("redis init success")
+	if lg := logger.GetLogger(); lg != nil {
+		lg.Info("redis init success")
+	}
 	return client
 }
 

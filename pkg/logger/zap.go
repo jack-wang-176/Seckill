@@ -7,8 +7,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// todo 使用依赖注入替代这个全局变量
-var Log *zap.Logger
+var apiLogger *zap.Logger
 
 func InitLogger() *zap.Logger {
 	encoderConfig := zap.NewProductionEncoderConfig()
@@ -21,6 +20,15 @@ func InitLogger() *zap.Logger {
 		zap.DebugLevel,
 	)
 
-	Log = zap.New(core, zap.AddCaller())
-	return Log
+	lg := zap.New(core, zap.AddCaller())
+	apiLogger = lg
+	return lg
+}
+
+func SetLogger(l *zap.Logger) {
+	apiLogger = l
+}
+
+func GetLogger() *zap.Logger {
+	return apiLogger
 }

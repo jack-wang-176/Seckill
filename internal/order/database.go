@@ -22,11 +22,20 @@ func (Product) TableName() string {
 	return "products"
 }
 
-type OrderDBWrapper struct {
+type OrderDatabase interface {
+	SeckillOrder(msg mq.SeckillMessage) error
+}
+
+func NewOrderMysql(db *gorm.DB) OrderDatabase {
+	_ = db.AutoMigrate(&Order{})
+	return &orderDBWrapper{DB: db}
+}
+
+type orderDBWrapper struct {
 	DB *gorm.DB
 }
 
-func (m *OrderDBWrapper) SeckillOrder(msg mq.SeckillMessage) error {
+func (m *orderDBWrapper) SeckillOrder(msg mq.SeckillMessage) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error {
 		res := tx.Model(&Product{}).
 			Where("id = ? AND stock > 0", msg.ProductID).

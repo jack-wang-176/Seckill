@@ -9,6 +9,7 @@ import (
 	"full_backend_practice/pkg/database"
 
 	"full_backend_practice/pkg/mq"
+	"full_backend_practice/pkg/response"
 	"full_backend_practice/pkg/token"
 
 	"github.com/rabbitmq/amqp091-go"
@@ -16,15 +17,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserServiceImpl struct {
-	MySqlWrapper *UserDBWrapper
+type UserServiceImpl interface {
+	Register(ctx context.Context, req *user.RegisterReq) (resp *user.RegisterResp, err error)
+	Login(ctx context.Context, req *user.LoginReq) (resp *user.LoginResp, err error)
+}
+
+type userServiceImpl struct {
+	MySqlWrapper UserDatabase
 	RedisWrapper *database.RedisWrapper
 	MQ           *mq.RabbitClient
 	Logger       *zap.Logger
 }
 
-func NewUserServiceImpl(mr *UserDBWrapper, rw *database.RedisWrapper, mq *mq.RabbitClient, logger *zap.Logger) *UserServiceImpl {
-	return &UserServiceImpl{
+func NewUserServiceImpl(mr UserDatabase, rw *database.RedisWrapper, mq *mq.RabbitClient, logger *zap.Logger) UserServiceImpl {
+	return &userServiceImpl{
 		MySqlWrapper: mr,
 		RedisWrapper: rw,
 		MQ:           mq,
@@ -32,20 +38,18 @@ func NewUserServiceImpl(mr *UserDBWrapper, rw *database.RedisWrapper, mq *mq.Rab
 	}
 }
 
-func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (resp *user.RegisterResp, err error) {
+func (s *userServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (resp *user.RegisterResp, err error) {
 	resp = new(user.RegisterResp)
 	resp.BaseResp = &base.BaseResp{}
 
 	if req.Username == "" || req.Password == "" {
-		resp.BaseResp.Code = 400
-		resp.BaseResp.Msg = "username and password required"
+		resp.BaseResp = response.BuildBaseResp(response.CodeInvalidParams, "username and password required")
 		return resp, nil
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		resp.BaseResp.Code = 500
-		resp.BaseResp.Msg = "password hash error"
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "password hash error")
 		return resp, nil
 	}
 
@@ -55,8 +59,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 	}
 	body, err := json.Marshal(mqmsg)
 	if err != nil {
-		resp.BaseResp.Code = 500
-		resp.BaseResp.Msg = fmt.Sprintf("marshal error: %v", err)
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, fmt.Sprintf("marshal error: %v", err))
 		return resp, nil
 	}
 	err = s.MQ.Channel.PublishWithContext(ctx, "", "user_register", false, false, amqp091.Publishing{
@@ -65,38 +68,33 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		Body:         body,
 	})
 	if err != nil {
-		resp.BaseResp.Code = 500
-		resp.BaseResp.Msg = "fail to register user"
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to register user")
 		return resp, nil
 	}
-	resp.BaseResp.Code = 200
-	resp.BaseResp.Msg = "success to register user"
+	resp.BaseResp = response.BuildBaseResp(response.CodeOK, "success to register user")
 	return resp, nil
 }
 
-func (s *UserServiceImpl) Login(ctx context.Context, req *user.LoginReq) (resp *user.LoginResp, err error) {
+func (s *userServiceImpl) Login(ctx context.Context, req *user.LoginReq) (resp *user.LoginResp, err error) {
 	resp = new(user.LoginResp)
 	resp.BaseResp = &base.BaseResp{}
 
 	if req.Username == "" || req.Password == "" {
-		resp.BaseResp.Code = 400
-		resp.BaseResp.Msg = "username and password required"
+		resp.BaseResp = response.BuildBaseResp(response.CodeInvalidParams, "username and password required")
 		return resp, nil
 	}
 
 	u, err := s.MySqlWrapper.LoginUser(req.Username)
 	if err != nil {
 		s.Logger.Warn("login failed: user not found", zap.String("username", req.Username))
-		resp.BaseResp.Code = 401
-		resp.BaseResp.Msg = "invalid username or password"
+		resp.BaseResp = response.BuildBaseResp(response.CodeUnauthorized, "invalid username or password")
 		return resp, nil
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password))
 	if err != nil {
 		s.Logger.Warn("login failed: incorrect password", zap.String("username", req.Username))
-		resp.BaseResp.Code = 401
-		resp.BaseResp.Msg = "invalid username or password"
+		resp.BaseResp = response.BuildBaseResp(response.CodeUnauthorized, "invalid username or password")
 		return resp, nil
 	}
 
@@ -106,13 +104,11 @@ func (s *UserServiceImpl) Login(ctx context.Context, req *user.LoginReq) (resp *
 	})
 	if err != nil {
 		s.Logger.Error("login failed: fail to create token", zap.Error(err))
-		resp.BaseResp.Code = 500
-		resp.BaseResp.Msg = "fail to generate token"
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to generate token")
 		return resp, nil
 	}
 
-	resp.BaseResp.Code = 200
-	resp.BaseResp.Msg = "success to login"
+	resp.BaseResp = response.BuildBaseResp(response.CodeOK, "success to login")
 	resp.Token = &accessToken
 	return resp, nil
 }

@@ -50,8 +50,8 @@ func buildContainer() *dig.Container {
 
 func main() {
 	c := buildContainer()
-	err := c.Invoke(func(impl *order.OrderServiceImpl,
-		consumer *order.OrderConsumer,
+	err := c.Invoke(func(impl order.OrderServiceImpl,
+		consumer order.OrderConsumer,
 		etcdCfg *config.EtcdConfig,
 		log *zap.Logger,
 	) error {

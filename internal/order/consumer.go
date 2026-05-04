@@ -9,25 +9,29 @@ import (
 	"gorm.io/gorm"
 )
 
-type OrderConsumer struct {
-	OrderDB *OrderDBWrapper
-	MQ      *mq.RabbitClient
-	Logger  *zap.Logger
+type OrderConsumer interface {
+	StartConsumer()
 }
 
-func NewOrderConsumer(OrderDB *OrderDBWrapper, mq *mq.RabbitClient, log *zap.Logger) *OrderConsumer {
-	return &OrderConsumer{
-		OrderDB: OrderDB,
-		MQ:      mq,
-		Logger:  log,
+type orderConsumer struct {
+	mysql  OrderDatabase
+	mq     *mq.RabbitClient
+	logger *zap.Logger
+}
+
+func NewOrderConsumer(o OrderDatabase, mq *mq.RabbitClient, log *zap.Logger) OrderConsumer {
+	return &orderConsumer{
+		mysql:  o,
+		mq:     mq,
+		logger: log,
 	}
 }
 
-func (o *OrderConsumer) StartConsumer() {
-	msgs, err := o.MQ.Channel.Consume(
+func (o *orderConsumer) StartConsumer() {
+	msgs, err := o.mq.Channel.Consume(
 		"order_seckill", "", false, false, false, false, nil)
 	if err != nil {
-		o.Logger.Fatal("MQ consume error", zap.Error(err))
+		o.logger.Fatal("MQ consume error", zap.Error(err))
 	}
 
 	go func() {
@@ -39,7 +43,7 @@ func (o *OrderConsumer) StartConsumer() {
 				continue
 			}
 
-			err := o.OrderDB.SeckillOrder(msg)
+			err := o.mysql.SeckillOrder(msg)
 
 			if err != nil {
 				log.Printf("订单处理失败 [订单号:%s]: %v", msg.OrderNo, err)
