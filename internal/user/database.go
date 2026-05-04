@@ -14,12 +14,6 @@ type User struct {
 	PasswordHash string `gorm:"type:varchar(255);not null"`
 }
 
-type UserDatabase interface {
-	RegisterUser(msg mq.UserMessage) error
-	FindUser(msg mq.UserMessage) error
-	CreateUser(msg mq.UserMessage) error
-	LoginUser(username string) (*User, error)
-}
 type userDBWrapper struct {
 	DB *gorm.DB
 }

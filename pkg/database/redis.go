@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"full_backend_practice/pkg/config"
-	"full_backend_practice/pkg/logger"
 
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -27,7 +26,7 @@ func init() {
 	decrStockScript = redis.NewScript(decrStockLua)
 }
 
-func InitRedis(cfg *config.RedisConfig) *redis.Client {
+func InitRedis(cfg *config.RedisConfig, log *zap.Logger) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr,
 		Password: cfg.Password,
@@ -36,14 +35,15 @@ func InitRedis(cfg *config.RedisConfig) *redis.Client {
 	})
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
-		if lg := logger.GetLogger(); lg != nil {
-			lg.Fatal("redis init err", zap.Error(err))
+		if log != nil {
+			log.Error("redis init err", zap.Error(err))
 		}
+		return nil, err
 	}
-	if lg := logger.GetLogger(); lg != nil {
-		lg.Info("redis init success")
+	if log != nil {
+		log.Info("redis init success")
 	}
-	return client
+	return client, nil
 }
 
 type RedisWrapper struct {
@@ -67,7 +67,7 @@ func (rw *RedisWrapper) SimpleDecrStock(productID uint) (bool, error) {
 	key := fmt.Sprintf("seckill:stock:%d", productID)
 	result, err := decrStockScript.Run(ctx, rw.Client, []string{key}).Result()
 	if err != nil {
-		return false, fmt.Errorf("lua script execution error: &W", err)
+		return false, fmt.Errorf("lua script execution error: %w", err)
 	}
 	if resultInt, ok := result.(int64); ok {
 		if resultInt == 1 {

@@ -9,17 +9,16 @@ import (
 	"go.uber.org/zap"
 )
 
-var OrderClient orderservice.Client
-
-func InitOrderRpc(l *zap.Logger) {
+func InitOrderRpc(l *zap.Logger) (orderservice.Client, error) {
 	r, err := etcd.NewEtcdResolver([]string{"127.0.0.1:2379"})
 	if err != nil {
 		if l != nil {
 			l.Error("fail to create etcd resolver", zap.Error(err))
 		}
+		return nil, err
 	}
 
-	OrderClient, err = orderservice.NewClient(
+	clientImpl, err := orderservice.NewClient(
 		"order-service",
 		client.WithResolver(r),
 		client.WithLoadBalancer(loadbalance.NewWeightedRoundRobinBalancer()),
@@ -29,5 +28,8 @@ func InitOrderRpc(l *zap.Logger) {
 		if l != nil {
 			l.Fatal("Init Order RPC Client failed", zap.Error(err))
 		}
+		return nil, err
 	}
+
+	return clientImpl, nil
 }

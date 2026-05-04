@@ -9,16 +9,15 @@ import (
 	"go.uber.org/zap"
 )
 
-var UserClient userservice.Client
-
-func InitUserRpc(l *zap.Logger) {
+func InitUserRpc(l *zap.Logger) (userservice.Client, error) {
 	r, err := etcd.NewEtcdResolver([]string{"127.0.0.1:2379"})
 	if err != nil {
 		if l != nil {
 			l.Info("fail to create etcd resolver")
 		}
+		return nil, err
 	}
-	UserClient, err = userservice.NewClient(
+	clientImpl, err := userservice.NewClient(
 		"user-service",
 		client.WithResolver(r),
 		client.WithLoadBalancer(loadbalance.NewWeightedRoundRobinBalancer()),
@@ -27,7 +26,8 @@ func InitUserRpc(l *zap.Logger) {
 		if l != nil {
 			l.Fatal("Init User RPC Client failed", zap.Error(err))
 		}
-		panic("初始化 RPC 客户端失败: " + err.Error())
+		return nil, err
 	}
 
+	return clientImpl, nil
 }

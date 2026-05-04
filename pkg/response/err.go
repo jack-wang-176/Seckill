@@ -5,11 +5,14 @@ import (
 )
 
 const (
-	CodeOK            int32 = 200
+	CodeOK int32 = 200
+	//for product service 3xx
+	//for user service 4xx
 	CodeInvalidParams int32 = 400
 	CodeUnauthorized  int32 = 401
-	CodeInternal      int32 = 500
-	// CodeRPCError can be used when gateway detects downstream microservice error
+	//for order service 5xx
+	CodeInternal int32 = 600
+
 	CodeRPCError int32 = 1001
 )
 

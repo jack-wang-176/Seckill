@@ -22,10 +22,6 @@ func (Product) TableName() string {
 	return "products"
 }
 
-type OrderDatabase interface {
-	SeckillOrder(msg mq.SeckillMessage) error
-}
-
 func NewOrderMysql(db *gorm.DB) OrderDatabase {
 	_ = db.AutoMigrate(&Order{})
 	return &orderDBWrapper{DB: db}

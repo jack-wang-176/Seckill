@@ -9,10 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type OrderConsumer interface {
-	StartConsumer()
-}
-
 type orderConsumer struct {
 	mysql  OrderDatabase
 	mq     *mq.RabbitClient

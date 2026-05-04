@@ -7,8 +7,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var apiLogger *zap.Logger
-
 func InitLogger() *zap.Logger {
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
@@ -21,14 +19,5 @@ func InitLogger() *zap.Logger {
 	)
 
 	lg := zap.New(core, zap.AddCaller())
-	apiLogger = lg
 	return lg
-}
-
-func SetLogger(l *zap.Logger) {
-	apiLogger = l
-}
-
-func GetLogger() *zap.Logger {
-	return apiLogger
 }

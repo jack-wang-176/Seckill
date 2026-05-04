@@ -17,11 +17,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserServiceImpl interface {
-	Register(ctx context.Context, req *user.RegisterReq) (resp *user.RegisterResp, err error)
-	Login(ctx context.Context, req *user.LoginReq) (resp *user.LoginResp, err error)
-}
-
 type userServiceImpl struct {
 	MySqlWrapper UserDatabase
 	RedisWrapper *database.RedisWrapper

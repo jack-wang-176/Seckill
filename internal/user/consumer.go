@@ -7,9 +7,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type UserConsumer interface {
-	StartRegisterConsumer()
-}
 type userConsumer struct {
 	MR     UserDatabase
 	MQ     *mq.RabbitClient

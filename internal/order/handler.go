@@ -8,7 +8,6 @@ import (
 	"full_backend_practice/kitex_gen/order"
 	"full_backend_practice/pkg/database"
 
-	"full_backend_practice/pkg/logger"
 	"full_backend_practice/pkg/mq"
 	"full_backend_practice/pkg/response"
 	"time"
@@ -16,10 +15,6 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
-
-type OrderServiceImpl interface {
-	Seckill(ctx context.Context, req *order.SeckillReq) (resp *order.SeckillResp, err error)
-}
 
 type orderServiceImpl struct {
 	MySqlWrapper OrderDatabase
@@ -59,11 +54,7 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	}
 	body, err := json.Marshal(msgStuct)
 	if err != nil {
-		if s.Logger != nil {
-			s.Logger.Error("JSON marshal error", zap.Error(err))
-		} else if lg := logger.GetLogger(); lg != nil {
-			lg.Error("JSON marshal error", zap.Error(err))
-		}
+		s.Logger.Error("JSON marshal error", zap.Error(err))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "JSON marshal error")
 		return resp, nil
 	}
@@ -73,21 +64,13 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 		Body:         body,
 	})
 	if err != nil {
-		if s.Logger != nil {
-			s.Logger.Error("RabbitMQ publish error", zap.Error(err))
-		} else if lg := logger.GetLogger(); lg != nil {
-			lg.Error("RabbitMQ publish error", zap.Error(err))
-		}
+		s.Logger.Error("RabbitMQ publish error", zap.Error(err))
 		_ = s.RedisWrapper.Client.Incr(ctx, fmt.Sprintf("seckill:stock:%d", req.ProductId))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to seckill order")
 		return resp, nil
 	}
 
-	if s.Logger != nil {
-		s.Logger.Info("Order pushed to MQ successfully", zap.String("order_no", orderNod))
-	} else if lg := logger.GetLogger(); lg != nil {
-		lg.Info("Order pushed to MQ successfully", zap.String("order_no", orderNod))
-	}
+	s.Logger.Info("Order pushed to MQ successfully", zap.String("order_no", orderNod))
 
 	resp.BaseResp = response.BuildBaseResp(response.CodeOK, "seckill success")
 	resp.OrderNo = &orderNod

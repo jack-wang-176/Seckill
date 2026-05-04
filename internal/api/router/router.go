@@ -7,16 +7,16 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 )
 
-func Register(h *server.Hertz) {
+func Register(h *server.Hertz, userH *handler.UserHandler, orderH *handler.OrderHandler) {
 	v1 := h.Group("/api/v1")
 
 	userGroup := v1.Group("/user")
 	{
-		userGroup.POST("/register", handler.Register)
-		userGroup.GET("/login", handler.Login)
+		userGroup.POST("/register", userH.Register)
+		userGroup.GET("/login", userH.Login)
 	}
 	seckillGroup := v1.Group("/seckill", middleware.AuthMiddleWare())
 	{
-		seckillGroup.POST("/order", handler.CreateOrder)
+		seckillGroup.POST("/order", orderH.CreateOrder)
 	}
 }
