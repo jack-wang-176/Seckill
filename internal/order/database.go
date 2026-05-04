@@ -8,9 +8,11 @@ import (
 
 type Order struct {
 	gorm.Model
-	OrderNo   string `gorm:"type:varchar(64);not null;uniqueIndex"`
-	ProductID uint   `gorm:"not null;uniqueIndex:idx_user_product"`
-	Status    int8   `gorm:"type:tinyint;not null;default:0"`
+	OrderNo   string  `gorm:"type:varchar(64);not null;uniqueIndex"`
+	ProductID uint    `gorm:"not null;uniqueIndex:idx_user_product"`
+	UserID    uint    `gorm:"not null;uniqueIndex:idx_user_product"`
+	Amount    float64 `gorm:"type:decimal(10,2);not null"`
+	Status    int8    `gorm:"type:tinyint;not null;default:0"`
 }
 
 type Product struct {

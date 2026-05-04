@@ -5,7 +5,18 @@ struct ProductInfo {
     1: i64 id
     2: string name
     3: double price
-    4: i32 stock
+    5: double seckill_prict
+    6: int32 stock
+    7: int32 version
+    8: string start_time
+    9: string end_time
+}
+
+struct GetProductListReq{
+}
+struct GetProductListResp{
+    1: required base.BaseResp base_resp
+    2: list<ProductInfo> products
 }
 
 struct GetProductReq {
@@ -17,6 +28,15 @@ struct GetProductResp {
     2: optional ProductInfo product
 }
 
+struct HeatProductReq{
+}
+struct HeatProductResp{
+    1: required base.BaseResp base_resp
+}
+
+
 service ProductService {
+    GetProductListResp GetProductList(1: GetProductListReq req)
     GetProductResp GetProduct(1: GetProductReq req)
+    HeatProductResp HeatProduct(1: HeatProductReq req)
 }
