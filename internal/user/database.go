@@ -5,7 +5,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"full_backend_practice/pkg/mq"
+	"full_backend_practice/infrastructure/mq"
 )
 
 type User struct {

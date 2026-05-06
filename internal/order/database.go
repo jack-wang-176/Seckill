@@ -1,7 +1,7 @@
 package order
 
 import (
-	"full_backend_practice/pkg/mq"
+	"full_backend_practice/infrastructure/mq"
 
 	"gorm.io/gorm"
 )

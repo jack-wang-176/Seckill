@@ -2,7 +2,7 @@ package order
 
 import (
 	"encoding/json"
-	"full_backend_practice/pkg/mq"
+	"full_backend_practice/infrastructure/mq"
 	"log"
 
 	"go.uber.org/zap"

@@ -1,10 +1,10 @@
 package main
 
 import (
+	"full_backend_practice/infrastructure/logger"
 	"full_backend_practice/internal/api/handler"
 	"full_backend_practice/internal/api/router"
 	"full_backend_practice/internal/rpc"
-	"full_backend_practice/pkg/logger"
 
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"go.uber.org/dig"

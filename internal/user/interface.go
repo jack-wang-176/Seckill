@@ -4,7 +4,7 @@ import (
 	"context"
 	"full_backend_practice/kitex_gen/user"
 
-	"full_backend_practice/pkg/mq"
+	"full_backend_practice/infrastructure/mq"
 )
 
 type UserServiceImpl interface {

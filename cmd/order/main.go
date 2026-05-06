@@ -3,12 +3,12 @@ package main
 import (
 	"net"
 
+	"full_backend_practice/infrastructure/database"
+	"full_backend_practice/infrastructure/logger"
+	"full_backend_practice/infrastructure/mq"
 	order "full_backend_practice/internal/order"
 	"full_backend_practice/kitex_gen/order/orderservice"
 	"full_backend_practice/pkg/config"
-	"full_backend_practice/pkg/database"
-	"full_backend_practice/pkg/logger"
-	"full_backend_practice/pkg/mq"
 
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"

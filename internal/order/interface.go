@@ -2,8 +2,8 @@ package order
 
 import (
 	"context"
+	"full_backend_practice/infrastructure/mq"
 	"full_backend_practice/kitex_gen/order"
-	"full_backend_practice/pkg/mq"
 )
 
 type OrderServiceImpl interface {

@@ -8,7 +8,7 @@ import (
 	"full_backend_practice/kitex_gen/order"
 	"full_backend_practice/pkg/database"
 
-	"full_backend_practice/pkg/mq"
+	"full_backend_practice/infrastructure/mq"
 	"full_backend_practice/pkg/response"
 	"time"
 
