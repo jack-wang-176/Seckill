@@ -20,6 +20,20 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
+	"GetSeckillPath": kitex.NewMethodInfo(
+		getSeckillPathHandler,
+		newOrderServiceGetSeckillPathArgs,
+		newOrderServiceGetSeckillPathResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"GetSeckillResult": kitex.NewMethodInfo(
+		getSeckillResult_Handler,
+		newOrderServiceGetSeckillResultArgs,
+		newOrderServiceGetSeckillResultResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 }
 
 var (
@@ -104,6 +118,42 @@ func newOrderServiceSeckillResult() interface{} {
 	return order.NewOrderServiceSeckillResult()
 }
 
+func getSeckillPathHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*order.OrderServiceGetSeckillPathArgs)
+	realResult := result.(*order.OrderServiceGetSeckillPathResult)
+	success, err := handler.(order.OrderService).GetSeckillPath(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newOrderServiceGetSeckillPathArgs() interface{} {
+	return order.NewOrderServiceGetSeckillPathArgs()
+}
+
+func newOrderServiceGetSeckillPathResult() interface{} {
+	return order.NewOrderServiceGetSeckillPathResult()
+}
+
+func getSeckillResult_Handler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*order.OrderServiceGetSeckillResultArgs)
+	realResult := result.(*order.OrderServiceGetSeckillResultResult)
+	success, err := handler.(order.OrderService).GetSeckillResult_(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newOrderServiceGetSeckillResultArgs() interface{} {
+	return order.NewOrderServiceGetSeckillResultArgs()
+}
+
+func newOrderServiceGetSeckillResultResult() interface{} {
+	return order.NewOrderServiceGetSeckillResultResult()
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -119,6 +169,26 @@ func (p *kClient) Seckill(ctx context.Context, req *order.SeckillReq) (r *order.
 	_args.Req = req
 	var _result order.OrderServiceSeckillResult
 	if err = p.c.Call(ctx, "Seckill", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) GetSeckillPath(ctx context.Context, req *order.GetSeckillPathReq) (r *order.GetSeckillPathResp, err error) {
+	var _args order.OrderServiceGetSeckillPathArgs
+	_args.Req = req
+	var _result order.OrderServiceGetSeckillPathResult
+	if err = p.c.Call(ctx, "GetSeckillPath", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) GetSeckillResult_(ctx context.Context, req *order.GetSeckillResultReq) (r *order.GetSeckillResultResp, err error) {
+	var _args order.OrderServiceGetSeckillResultArgs
+	_args.Req = req
+	var _result order.OrderServiceGetSeckillResultResult
+	if err = p.c.Call(ctx, "GetSeckillResult", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

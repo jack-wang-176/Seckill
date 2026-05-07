@@ -7,6 +7,7 @@ import (
 	"full_backend_practice/infrastructure/logger"
 	"full_backend_practice/infrastructure/mq"
 	order "full_backend_practice/internal/order"
+	kitexorder "full_backend_practice/kitex_gen/order"
 	"full_backend_practice/kitex_gen/order/orderservice"
 	"full_backend_practice/pkg/config"
 
@@ -50,7 +51,7 @@ func buildContainer() *dig.Container {
 
 func main() {
 	c := buildContainer()
-	err := c.Invoke(func(impl order.OrderServiceImpl,
+	err := c.Invoke(func(impl kitexorder.OrderService,
 		consumer order.OrderConsumer,
 		etcdCfg *config.EtcdConfig,
 		log *zap.Logger,

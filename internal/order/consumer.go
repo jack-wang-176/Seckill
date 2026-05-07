@@ -2,24 +2,26 @@ package order
 
 import (
 	"encoding/json"
+	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/mq"
-	"log"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 type orderConsumer struct {
-	mysql  OrderDatabase
-	mq     *mq.RabbitClient
-	logger *zap.Logger
+	mysql        OrderDatabase
+	RedisWrapper *database.RedisWrapper
+	mq           *mq.RabbitClient
+	logger       *zap.Logger
 }
 
-func NewOrderConsumer(o OrderDatabase, mq *mq.RabbitClient, log *zap.Logger) OrderConsumer {
+func NewOrderConsumer(o OrderDatabase, mq *mq.RabbitClient, redisWrapper *database.RedisWrapper, log *zap.Logger) OrderConsumer {
 	return &orderConsumer{
-		mysql:  o,
-		mq:     mq,
-		logger: log,
+		mysql:        o,
+		RedisWrapper: redisWrapper,
+		mq:           mq,
+		logger:       log,
 	}
 }
 
@@ -34,7 +36,7 @@ func (o *orderConsumer) StartConsumer() {
 		for d := range msgs {
 			var msg mq.SeckillMessage
 			if err := json.Unmarshal(d.Body, &msg); err != nil {
-				log.Printf("fail to parse message: %v\n", err)
+				o.logger.Error("fail to parse message", zap.Error(err))
 				d.Nack(false, false)
 				continue
 			}
@@ -42,7 +44,7 @@ func (o *orderConsumer) StartConsumer() {
 			err := o.mysql.SeckillOrder(msg)
 
 			if err != nil {
-				log.Printf("订单处理失败 [订单号:%s]: %v", msg.OrderNo, err)
+				o.logger.Error("订单处理失败", zap.String("order_no", msg.OrderNo), zap.Error(err))
 
 				if err == gorm.ErrRecordNotFound {
 					d.Ack(false)
@@ -51,7 +53,12 @@ func (o *orderConsumer) StartConsumer() {
 				}
 			} else {
 				d.Ack(false)
-				log.Printf("订单成功落盘: %s", msg.OrderNo)
+				//调用redis
+				err := o.RedisWrapper.SendSeckillCre(uint(msg.ProductID), uint(msg.UserID))
+				if err != nil {
+					o.logger.Error("Redis send seckill result error", zap.String("order_no", msg.OrderNo), zap.Error(err))
+				}
+				o.logger.Info("订单处理成功", zap.String("order_no", msg.OrderNo))
 			}
 		}
 	}()

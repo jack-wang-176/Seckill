@@ -8,9 +8,95 @@ import (
 	"full_backend_practice/kitex_gen/base"
 )
 
-type SeckillReq struct {
+type GetSeckillPathReq struct {
 	UserId    int64 `thrift:"user_id,1,required" frugal:"1,required,i64" json:"user_id"`
 	ProductId int64 `thrift:"product_id,2,required" frugal:"2,required,i64" json:"product_id"`
+}
+
+func NewGetSeckillPathReq() *GetSeckillPathReq {
+	return &GetSeckillPathReq{}
+}
+
+func (p *GetSeckillPathReq) InitDefault() {
+}
+
+func (p *GetSeckillPathReq) GetUserId() (v int64) {
+	return p.UserId
+}
+
+func (p *GetSeckillPathReq) GetProductId() (v int64) {
+	return p.ProductId
+}
+func (p *GetSeckillPathReq) SetUserId(val int64) {
+	p.UserId = val
+}
+func (p *GetSeckillPathReq) SetProductId(val int64) {
+	p.ProductId = val
+}
+
+func (p *GetSeckillPathReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetSeckillPathReq(%+v)", *p)
+}
+
+var fieldIDToName_GetSeckillPathReq = map[int16]string{
+	1: "user_id",
+	2: "product_id",
+}
+
+type GetSeckillPathResp struct {
+	BaseResp *base.BaseResp `thrift:"base_resp,1,required" frugal:"1,required,base.BaseResp" json:"base_resp"`
+	Path     string         `thrift:"path,2,required" frugal:"2,required,string" json:"path"`
+}
+
+func NewGetSeckillPathResp() *GetSeckillPathResp {
+	return &GetSeckillPathResp{}
+}
+
+func (p *GetSeckillPathResp) InitDefault() {
+}
+
+var GetSeckillPathResp_BaseResp_DEFAULT *base.BaseResp
+
+func (p *GetSeckillPathResp) GetBaseResp() (v *base.BaseResp) {
+	if !p.IsSetBaseResp() {
+		return GetSeckillPathResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+func (p *GetSeckillPathResp) GetPath() (v string) {
+	return p.Path
+}
+func (p *GetSeckillPathResp) SetBaseResp(val *base.BaseResp) {
+	p.BaseResp = val
+}
+func (p *GetSeckillPathResp) SetPath(val string) {
+	p.Path = val
+}
+
+func (p *GetSeckillPathResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *GetSeckillPathResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetSeckillPathResp(%+v)", *p)
+}
+
+var fieldIDToName_GetSeckillPathResp = map[int16]string{
+	1: "base_resp",
+	2: "path",
+}
+
+type SeckillReq struct {
+	UserId    int64  `thrift:"user_id,1,required" frugal:"1,required,i64" json:"user_id"`
+	ProductId int64  `thrift:"product_id,2,required" frugal:"2,required,i64" json:"product_id"`
+	Path      string `thrift:"path,3,required" frugal:"3,required,string" json:"path"`
 }
 
 func NewSeckillReq() *SeckillReq {
@@ -27,11 +113,18 @@ func (p *SeckillReq) GetUserId() (v int64) {
 func (p *SeckillReq) GetProductId() (v int64) {
 	return p.ProductId
 }
+
+func (p *SeckillReq) GetPath() (v string) {
+	return p.Path
+}
 func (p *SeckillReq) SetUserId(val int64) {
 	p.UserId = val
 }
 func (p *SeckillReq) SetProductId(val int64) {
 	p.ProductId = val
+}
+func (p *SeckillReq) SetPath(val string) {
+	p.Path = val
 }
 
 func (p *SeckillReq) String() string {
@@ -44,11 +137,11 @@ func (p *SeckillReq) String() string {
 var fieldIDToName_SeckillReq = map[int16]string{
 	1: "user_id",
 	2: "product_id",
+	3: "path",
 }
 
 type SeckillResp struct {
 	BaseResp *base.BaseResp `thrift:"base_resp,1,required" frugal:"1,required,base.BaseResp" json:"base_resp"`
-	OrderNo  *string        `thrift:"order_no,2,optional" frugal:"2,optional,string" json:"order_no,omitempty"`
 }
 
 func NewSeckillResp() *SeckillResp {
@@ -66,28 +159,12 @@ func (p *SeckillResp) GetBaseResp() (v *base.BaseResp) {
 	}
 	return p.BaseResp
 }
-
-var SeckillResp_OrderNo_DEFAULT string
-
-func (p *SeckillResp) GetOrderNo() (v string) {
-	if !p.IsSetOrderNo() {
-		return SeckillResp_OrderNo_DEFAULT
-	}
-	return *p.OrderNo
-}
 func (p *SeckillResp) SetBaseResp(val *base.BaseResp) {
 	p.BaseResp = val
-}
-func (p *SeckillResp) SetOrderNo(val *string) {
-	p.OrderNo = val
 }
 
 func (p *SeckillResp) IsSetBaseResp() bool {
 	return p.BaseResp != nil
-}
-
-func (p *SeckillResp) IsSetOrderNo() bool {
-	return p.OrderNo != nil
 }
 
 func (p *SeckillResp) String() string {
@@ -99,11 +176,108 @@ func (p *SeckillResp) String() string {
 
 var fieldIDToName_SeckillResp = map[int16]string{
 	1: "base_resp",
-	2: "order_no",
+}
+
+type GetSeckillResultReq struct {
+	UserId    int64 `thrift:"user_id,1,required" frugal:"1,required,i64" json:"user_id"`
+	ProductId int64 `thrift:"product_id,2,required" frugal:"2,required,i64" json:"product_id"`
+}
+
+func NewGetSeckillResultReq() *GetSeckillResultReq {
+	return &GetSeckillResultReq{}
+}
+
+func (p *GetSeckillResultReq) InitDefault() {
+}
+
+func (p *GetSeckillResultReq) GetUserId() (v int64) {
+	return p.UserId
+}
+
+func (p *GetSeckillResultReq) GetProductId() (v int64) {
+	return p.ProductId
+}
+func (p *GetSeckillResultReq) SetUserId(val int64) {
+	p.UserId = val
+}
+func (p *GetSeckillResultReq) SetProductId(val int64) {
+	p.ProductId = val
+}
+
+func (p *GetSeckillResultReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetSeckillResultReq(%+v)", *p)
+}
+
+var fieldIDToName_GetSeckillResultReq = map[int16]string{
+	1: "user_id",
+	2: "product_id",
+}
+
+type GetSeckillResultResp struct {
+	BaseResp *base.BaseResp `thrift:"base_resp,1,required" frugal:"1,required,base.BaseResp" json:"base_resp"`
+	Status   int8           `thrift:"status,2" frugal:"2,default,i8" json:"status"`
+	OrderNo  string         `thrift:"order_no,3" frugal:"3,default,string" json:"order_no"`
+}
+
+func NewGetSeckillResultResp() *GetSeckillResultResp {
+	return &GetSeckillResultResp{}
+}
+
+func (p *GetSeckillResultResp) InitDefault() {
+}
+
+var GetSeckillResultResp_BaseResp_DEFAULT *base.BaseResp
+
+func (p *GetSeckillResultResp) GetBaseResp() (v *base.BaseResp) {
+	if !p.IsSetBaseResp() {
+		return GetSeckillResultResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+func (p *GetSeckillResultResp) GetStatus() (v int8) {
+	return p.Status
+}
+
+func (p *GetSeckillResultResp) GetOrderNo() (v string) {
+	return p.OrderNo
+}
+func (p *GetSeckillResultResp) SetBaseResp(val *base.BaseResp) {
+	p.BaseResp = val
+}
+func (p *GetSeckillResultResp) SetStatus(val int8) {
+	p.Status = val
+}
+func (p *GetSeckillResultResp) SetOrderNo(val string) {
+	p.OrderNo = val
+}
+
+func (p *GetSeckillResultResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *GetSeckillResultResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetSeckillResultResp(%+v)", *p)
+}
+
+var fieldIDToName_GetSeckillResultResp = map[int16]string{
+	1: "base_resp",
+	2: "status",
+	3: "order_no",
 }
 
 type OrderService interface {
 	Seckill(ctx context.Context, req *SeckillReq) (r *SeckillResp, err error)
+
+	GetSeckillPath(ctx context.Context, req *GetSeckillPathReq) (r *GetSeckillPathResp, err error)
+
+	GetSeckillResult_(ctx context.Context, req *GetSeckillResultReq) (r *GetSeckillResultResp, err error)
 }
 
 type OrderServiceSeckillArgs struct {
@@ -179,5 +353,157 @@ func (p *OrderServiceSeckillResult) String() string {
 }
 
 var fieldIDToName_OrderServiceSeckillResult = map[int16]string{
+	0: "success",
+}
+
+type OrderServiceGetSeckillPathArgs struct {
+	Req *GetSeckillPathReq `thrift:"req,1" frugal:"1,default,GetSeckillPathReq" json:"req"`
+}
+
+func NewOrderServiceGetSeckillPathArgs() *OrderServiceGetSeckillPathArgs {
+	return &OrderServiceGetSeckillPathArgs{}
+}
+
+func (p *OrderServiceGetSeckillPathArgs) InitDefault() {
+}
+
+var OrderServiceGetSeckillPathArgs_Req_DEFAULT *GetSeckillPathReq
+
+func (p *OrderServiceGetSeckillPathArgs) GetReq() (v *GetSeckillPathReq) {
+	if !p.IsSetReq() {
+		return OrderServiceGetSeckillPathArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *OrderServiceGetSeckillPathArgs) SetReq(val *GetSeckillPathReq) {
+	p.Req = val
+}
+
+func (p *OrderServiceGetSeckillPathArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *OrderServiceGetSeckillPathArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("OrderServiceGetSeckillPathArgs(%+v)", *p)
+}
+
+var fieldIDToName_OrderServiceGetSeckillPathArgs = map[int16]string{
+	1: "req",
+}
+
+type OrderServiceGetSeckillPathResult struct {
+	Success *GetSeckillPathResp `thrift:"success,0,optional" frugal:"0,optional,GetSeckillPathResp" json:"success,omitempty"`
+}
+
+func NewOrderServiceGetSeckillPathResult() *OrderServiceGetSeckillPathResult {
+	return &OrderServiceGetSeckillPathResult{}
+}
+
+func (p *OrderServiceGetSeckillPathResult) InitDefault() {
+}
+
+var OrderServiceGetSeckillPathResult_Success_DEFAULT *GetSeckillPathResp
+
+func (p *OrderServiceGetSeckillPathResult) GetSuccess() (v *GetSeckillPathResp) {
+	if !p.IsSetSuccess() {
+		return OrderServiceGetSeckillPathResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *OrderServiceGetSeckillPathResult) SetSuccess(x interface{}) {
+	p.Success = x.(*GetSeckillPathResp)
+}
+
+func (p *OrderServiceGetSeckillPathResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *OrderServiceGetSeckillPathResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("OrderServiceGetSeckillPathResult(%+v)", *p)
+}
+
+var fieldIDToName_OrderServiceGetSeckillPathResult = map[int16]string{
+	0: "success",
+}
+
+type OrderServiceGetSeckillResultArgs struct {
+	Req *GetSeckillResultReq `thrift:"req,1" frugal:"1,default,GetSeckillResultReq" json:"req"`
+}
+
+func NewOrderServiceGetSeckillResultArgs() *OrderServiceGetSeckillResultArgs {
+	return &OrderServiceGetSeckillResultArgs{}
+}
+
+func (p *OrderServiceGetSeckillResultArgs) InitDefault() {
+}
+
+var OrderServiceGetSeckillResultArgs_Req_DEFAULT *GetSeckillResultReq
+
+func (p *OrderServiceGetSeckillResultArgs) GetReq() (v *GetSeckillResultReq) {
+	if !p.IsSetReq() {
+		return OrderServiceGetSeckillResultArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *OrderServiceGetSeckillResultArgs) SetReq(val *GetSeckillResultReq) {
+	p.Req = val
+}
+
+func (p *OrderServiceGetSeckillResultArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *OrderServiceGetSeckillResultArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("OrderServiceGetSeckillResultArgs(%+v)", *p)
+}
+
+var fieldIDToName_OrderServiceGetSeckillResultArgs = map[int16]string{
+	1: "req",
+}
+
+type OrderServiceGetSeckillResultResult struct {
+	Success *GetSeckillResultResp `thrift:"success,0,optional" frugal:"0,optional,GetSeckillResultResp" json:"success,omitempty"`
+}
+
+func NewOrderServiceGetSeckillResultResult() *OrderServiceGetSeckillResultResult {
+	return &OrderServiceGetSeckillResultResult{}
+}
+
+func (p *OrderServiceGetSeckillResultResult) InitDefault() {
+}
+
+var OrderServiceGetSeckillResultResult_Success_DEFAULT *GetSeckillResultResp
+
+func (p *OrderServiceGetSeckillResultResult) GetSuccess() (v *GetSeckillResultResp) {
+	if !p.IsSetSuccess() {
+		return OrderServiceGetSeckillResultResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *OrderServiceGetSeckillResultResult) SetSuccess(x interface{}) {
+	p.Success = x.(*GetSeckillResultResp)
+}
+
+func (p *OrderServiceGetSeckillResultResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *OrderServiceGetSeckillResultResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("OrderServiceGetSeckillResultResult(%+v)", *p)
+}
+
+var fieldIDToName_OrderServiceGetSeckillResultResult = map[int16]string{
 	0: "success",
 }

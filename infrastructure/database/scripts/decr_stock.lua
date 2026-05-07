@@ -1,9 +1,23 @@
-local key = KEYS[1]
-local stock = tonumber(redis.call('GET,key'))
-
-if not stock or stock <= 0 then
-    return 0
+local stockKey = KEYS[1]
+local soldoutKey = KEYS[2]
+---- -1 sell out  -3 too much decr -2 not exist error
+if redis.call("EXISTS",soldoutKey) == 1 then
+    return -1
 end
 
-redis.call('DECR',key)
+local stock = tonumber(redis.call("GET", stockKey))
+if stock -1 = 0 then
+    redis.call("SET",soldoutKey,1)
+    return  -1
+end
+if stock <= 0 then
+    return -3
+end
+
+if stock == nil then
+    return -2
+end
+--stockkey和redis heat 中key保持一致，记录具体的库存数量
+redis.call("DECR",stockKey)
 return 1
+

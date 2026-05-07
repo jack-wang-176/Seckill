@@ -23,7 +23,6 @@ func BuildBaseResp(code int32, msg string) *base.BaseResp {
 	}
 }
 
-// Helpers for common responses
 func BuildOK() *base.BaseResp {
 	return BuildBaseResp(CodeOK, "success")
 }

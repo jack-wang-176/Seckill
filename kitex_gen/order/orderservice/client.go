@@ -12,6 +12,8 @@ import (
 // Client is designed to provide IDL-compatible methods with call-option parameter for kitex framework.
 type Client interface {
 	Seckill(ctx context.Context, req *order.SeckillReq, callOptions ...callopt.Option) (r *order.SeckillResp, err error)
+	GetSeckillPath(ctx context.Context, req *order.GetSeckillPathReq, callOptions ...callopt.Option) (r *order.GetSeckillPathResp, err error)
+	GetSeckillResult_(ctx context.Context, req *order.GetSeckillResultReq, callOptions ...callopt.Option) (r *order.GetSeckillResultResp, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -46,4 +48,14 @@ type kOrderServiceClient struct {
 func (p *kOrderServiceClient) Seckill(ctx context.Context, req *order.SeckillReq, callOptions ...callopt.Option) (r *order.SeckillResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.Seckill(ctx, req)
+}
+
+func (p *kOrderServiceClient) GetSeckillPath(ctx context.Context, req *order.GetSeckillPathReq, callOptions ...callopt.Option) (r *order.GetSeckillPathResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetSeckillPath(ctx, req)
+}
+
+func (p *kOrderServiceClient) GetSeckillResult_(ctx context.Context, req *order.GetSeckillResultReq, callOptions ...callopt.Option) (r *order.GetSeckillResultResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetSeckillResult_(ctx, req)
 }

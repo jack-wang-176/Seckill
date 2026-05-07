@@ -3,7 +3,7 @@ namespace go order
 include "base.thrift"
 
 
-struct GetSeckillPath{
+struct GetSeckillPathReq{
     1: required i64 user_id
     2: required i64 product_id
 }
@@ -33,6 +33,6 @@ struct GetSeckillResultResp{
 
 service OrderService{
     SeckillResp Seckill(1: SeckillReq req)
-    GetSeckillPathResp GetSeckillPath(1: GetSeckillPath req)
+    GetSeckillPathResp GetSeckillPath(1: GetSeckillPathReq req)
     GetSeckillResultResp GetSeckillResult(1: GetSeckillResultReq req)
 }

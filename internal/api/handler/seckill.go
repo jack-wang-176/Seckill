@@ -7,6 +7,8 @@ import (
 	"full_backend_practice/pkg/response"
 	"strconv"
 
+	"github.com/cloudwego/hertz/pkg/common/utils"
+
 	"go.uber.org/zap"
 
 	"github.com/cloudwego/hertz/pkg/app"
@@ -37,10 +39,14 @@ func (h *OrderHandler) CreateOrder(c context.Context, ctx *app.RequestContext) {
 		response.Error(ctx, 400, err.Error())
 		return
 	}
+	path := ctx.Param("path")
+	//这里的path是前端传过来的，之前生成的路径存入了redis，后续校验路径和之前生成的是否一致
+
 	productID, _ := strconv.ParseInt(req.ProductId, 10, 64)
 	resp, err := h.Client.Seckill(c, &order.SeckillReq{
 		UserId:    userID,
 		ProductId: productID,
+		Path:      path,
 	})
 	if err != nil {
 		if h.logger != nil {
@@ -68,7 +74,66 @@ func (h *OrderHandler) CreateOrder(c context.Context, ctx *app.RequestContext) {
 		return
 	}
 
-	response.Success(ctx, map[string]interface{}{
-		"order_no": resp.OrderNo,
+	response.Success(ctx, utils.H{"message": "seckill success"})
+}
+func (h *OrderHandler) OrderPath(c context.Context, ctx *app.RequestContext) {
+	userIDVal, exist := ctx.Get("user_id")
+	if !exist {
+		response.Error(ctx, 401, "user_id not exists")
+		return
+	}
+	userID := userIDVal.(int64)
+	var req SeckillReq
+	if err := ctx.BindAndValidate(&req); err != nil {
+		response.Error(ctx, 400, err.Error())
+		return
+	}
+	productID, _ := strconv.ParseInt(req.ProductId, 10, 64)
+	resp, err := h.Client.GetSeckillPath(c, &order.GetSeckillPathReq{
+		UserId:    userID,
+		ProductId: productID,
 	})
+	if err != nil {
+		response.ServerError(ctx, err)
+		return
+	}
+	response.Success(ctx, map[string]interface{}{
+		"path": resp.Path,
+	})
+}
+func (h *OrderHandler) OrderResult(c context.Context, ctx *app.RequestContext) {
+	userIDVal, exist := ctx.Get("user_id")
+	if !exist {
+		response.Error(ctx, 401, "user_id not exists")
+		return
+	}
+	userID := userIDVal.(int64)
+	var req SeckillReq
+	if err := ctx.BindAndValidate(&req); err != nil {
+		response.Error(ctx, 400, err.Error())
+		return
+	}
+	productID, _ := strconv.ParseInt(req.ProductId, 10, 64)
+	resp, err := h.Client.GetSeckillResult_(c, &order.GetSeckillResultReq{
+		UserId:    userID,
+		ProductId: productID,
+	})
+	if resp.BaseResp == nil || resp.BaseResp.Code != response.CodeOK {
+		code := response.CodeInternal
+		var msg string
+		if resp.BaseResp != nil {
+			code = resp.BaseResp.Code
+			msg = resp.BaseResp.Msg
+		}
+		if msg == "" {
+			msg = "downstream service error"
+		}
+		response.Error(ctx, int(code), msg)
+		return
+	}
+	if err != nil {
+		response.ServerError(ctx, err)
+		return
+	}
+
 }
