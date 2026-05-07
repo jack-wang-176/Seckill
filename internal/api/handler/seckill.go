@@ -97,7 +97,7 @@ func (h *OrderHandler) OrderPath(c context.Context, ctx *app.RequestContext) {
 		response.ServerError(ctx, err)
 		return
 	}
-	response.Success(ctx, map[string]interface{}{
+	response.Success(ctx, utils.H{
 		"path": resp.Path,
 	})
 }

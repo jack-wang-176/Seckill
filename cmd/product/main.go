@@ -6,8 +6,9 @@ import (
 	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/logger"
 	"full_backend_practice/infrastructure/mq"
-	"full_backend_practice/internal/user"
-	"full_backend_practice/kitex_gen/user/userservice"
+	"full_backend_practice/internal/product"
+	"full_backend_practice/kitex_gen/product/productservice"
+
 	"full_backend_practice/pkg/config"
 
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
@@ -31,6 +32,7 @@ func provideConfigs(c *dig.Container) {
 		return &config.EtcdConfig{Endpoints: []string{"127.0.0.1:2379"}}
 	})
 }
+
 func buildContainer() *dig.Container {
 	c := dig.New()
 	provideConfigs(c)
@@ -40,37 +42,33 @@ func buildContainer() *dig.Container {
 	c.Provide(database.InitRedis)
 	c.Provide(mq.InitRabbitMQ)
 
-	c.Provide(user.NewUserServiceImpl)
-	c.Provide(user.NewConsumer)
+	c.Provide(product.NewProductServiceImpl)
+	c.Provide(product.NewProductConsumer)
 	return c
 }
 
 func main() {
 	c := buildContainer()
-	err := c.Invoke(func(impl user.UserServiceImpl,
-		consumer user.UserConsumer,
+	err := c.Invoke(func(impl product.ProductServiceImpl,
+		consumer product.ProductConsumer,
 		etcdCfg *config.EtcdConfig,
 		log *zap.Logger,
 	) error {
-		log.Info("Starting Application of user service...")
-		consumer.StartRegisterConsumer()
-		log.Info("Order Consumer Started")
-
+		log.Info("Starting Application of product service...")
+		consumer.StartConsumer()
+		log.Info("Product Consumer Started")
 		r, err := etcd.NewEtcdRegistry(etcdCfg.Endpoints)
 		if err != nil {
 			log.Error("Failed to create etcd registry", zap.Error(err))
 			return err
 		}
-
-		addr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:8889")
-
-		svr := userservice.NewServer(
+		addr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:8890")
+		svr := productservice.NewServer(
 			impl,
 			server.WithServiceAddr(addr),
 			server.WithRegistry(r),
-			server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "user_service"}),
+			server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "product_service"}),
 		)
-		log.Info("User Service RPC Server is running on 0.0.0.0:8889")
 		return svr.Run()
 	})
 	if err != nil {

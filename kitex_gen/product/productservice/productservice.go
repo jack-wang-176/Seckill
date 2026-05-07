@@ -13,10 +13,24 @@ import (
 var errInvalidMessageType = errors.New("invalid message type for service method handler")
 
 var serviceMethods = map[string]kitex.MethodInfo{
+	"GetProductList": kitex.NewMethodInfo(
+		getProductListHandler,
+		newProductServiceGetProductListArgs,
+		newProductServiceGetProductListResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 	"GetProduct": kitex.NewMethodInfo(
 		getProductHandler,
 		newProductServiceGetProductArgs,
 		newProductServiceGetProductResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"HeatProduct": kitex.NewMethodInfo(
+		heatProductHandler,
+		newProductServiceHeatProductArgs,
+		newProductServiceHeatProductResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
@@ -86,6 +100,24 @@ func newServiceInfo(hasStreaming bool, keepStreamingMethods bool, keepNonStreami
 	return svcInfo
 }
 
+func getProductListHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*product.ProductServiceGetProductListArgs)
+	realResult := result.(*product.ProductServiceGetProductListResult)
+	success, err := handler.(product.ProductService).GetProductList(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newProductServiceGetProductListArgs() interface{} {
+	return product.NewProductServiceGetProductListArgs()
+}
+
+func newProductServiceGetProductListResult() interface{} {
+	return product.NewProductServiceGetProductListResult()
+}
+
 func getProductHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	realArg := arg.(*product.ProductServiceGetProductArgs)
 	realResult := result.(*product.ProductServiceGetProductResult)
@@ -104,6 +136,24 @@ func newProductServiceGetProductResult() interface{} {
 	return product.NewProductServiceGetProductResult()
 }
 
+func heatProductHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*product.ProductServiceHeatProductArgs)
+	realResult := result.(*product.ProductServiceHeatProductResult)
+	success, err := handler.(product.ProductService).HeatProduct(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newProductServiceHeatProductArgs() interface{} {
+	return product.NewProductServiceHeatProductArgs()
+}
+
+func newProductServiceHeatProductResult() interface{} {
+	return product.NewProductServiceHeatProductResult()
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -114,11 +164,31 @@ func newServiceClient(c client.Client) *kClient {
 	}
 }
 
+func (p *kClient) GetProductList(ctx context.Context, req *product.GetProductListReq) (r *product.GetProductListResp, err error) {
+	var _args product.ProductServiceGetProductListArgs
+	_args.Req = req
+	var _result product.ProductServiceGetProductListResult
+	if err = p.c.Call(ctx, "GetProductList", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
 func (p *kClient) GetProduct(ctx context.Context, req *product.GetProductReq) (r *product.GetProductResp, err error) {
 	var _args product.ProductServiceGetProductArgs
 	_args.Req = req
 	var _result product.ProductServiceGetProductResult
 	if err = p.c.Call(ctx, "GetProduct", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) HeatProduct(ctx context.Context, req *product.HeatProductReq) (r *product.HeatProductResp, err error) {
+	var _args product.ProductServiceHeatProductArgs
+	_args.Req = req
+	var _result product.ProductServiceHeatProductResult
+	if err = p.c.Call(ctx, "HeatProduct", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

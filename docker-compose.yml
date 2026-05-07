@@ -9,7 +9,7 @@ services:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: seckill_db # 启动时自动创建这个库
+      MYSQL_DATABASE: seckill_db 
     command: --default-authentication-plugin=mysql_native_password
     volumes:
       - mysql_data:/var/lib/mysql # 数据持久化，防止重启丢失
@@ -51,7 +51,7 @@ services:
     container_name: seckill-jaeger
     ports:
       - "16686:16686"
-      - "4317:4317""
+      - "4317:4317"
   prometheus:
     image: prom/prometheus:latest
     container_name: seckill-prometheus
@@ -60,7 +60,7 @@ services:
     volumes:
       - ./deploy/prometheus.yml :etc/prometheus/prometheus.yml
 
-# 定义数据卷，让容器里的数据存在你本地电脑的硬盘上
+# 定义数据卷
 volumes:
   mysql_data:
   redis_data:

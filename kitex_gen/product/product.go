@@ -9,10 +9,14 @@ import (
 )
 
 type ProductInfo struct {
-	Id    int64   `thrift:"id,1" frugal:"1,default,i64" json:"id"`
-	Name  string  `thrift:"name,2" frugal:"2,default,string" json:"name"`
-	Price float64 `thrift:"price,3" frugal:"3,default,double" json:"price"`
-	Stock int32   `thrift:"stock,4" frugal:"4,default,i32" json:"stock"`
+	Id           int64   `thrift:"id,1" frugal:"1,default,i64" json:"id"`
+	Name         string  `thrift:"name,2" frugal:"2,default,string" json:"name"`
+	Price        float64 `thrift:"price,3" frugal:"3,default,double" json:"price"`
+	SeckillPrict float64 `thrift:"seckill_prict,5" frugal:"5,default,double" json:"seckill_prict"`
+	Stock        int32   `thrift:"stock,6" frugal:"6,default,i32" json:"stock"`
+	Version      int32   `thrift:"version,7" frugal:"7,default,i32" json:"version"`
+	StartTime    string  `thrift:"start_time,8" frugal:"8,default,string" json:"start_time"`
+	EndTime      string  `thrift:"end_time,9" frugal:"9,default,string" json:"end_time"`
 }
 
 func NewProductInfo() *ProductInfo {
@@ -34,8 +38,24 @@ func (p *ProductInfo) GetPrice() (v float64) {
 	return p.Price
 }
 
+func (p *ProductInfo) GetSeckillPrict() (v float64) {
+	return p.SeckillPrict
+}
+
 func (p *ProductInfo) GetStock() (v int32) {
 	return p.Stock
+}
+
+func (p *ProductInfo) GetVersion() (v int32) {
+	return p.Version
+}
+
+func (p *ProductInfo) GetStartTime() (v string) {
+	return p.StartTime
+}
+
+func (p *ProductInfo) GetEndTime() (v string) {
+	return p.EndTime
 }
 func (p *ProductInfo) SetId(val int64) {
 	p.Id = val
@@ -46,8 +66,20 @@ func (p *ProductInfo) SetName(val string) {
 func (p *ProductInfo) SetPrice(val float64) {
 	p.Price = val
 }
+func (p *ProductInfo) SetSeckillPrict(val float64) {
+	p.SeckillPrict = val
+}
 func (p *ProductInfo) SetStock(val int32) {
 	p.Stock = val
+}
+func (p *ProductInfo) SetVersion(val int32) {
+	p.Version = val
+}
+func (p *ProductInfo) SetStartTime(val string) {
+	p.StartTime = val
+}
+func (p *ProductInfo) SetEndTime(val string) {
+	p.EndTime = val
 }
 
 func (p *ProductInfo) String() string {
@@ -61,7 +93,77 @@ var fieldIDToName_ProductInfo = map[int16]string{
 	1: "id",
 	2: "name",
 	3: "price",
-	4: "stock",
+	5: "seckill_prict",
+	6: "stock",
+	7: "version",
+	8: "start_time",
+	9: "end_time",
+}
+
+type GetProductListReq struct {
+}
+
+func NewGetProductListReq() *GetProductListReq {
+	return &GetProductListReq{}
+}
+
+func (p *GetProductListReq) InitDefault() {
+}
+
+func (p *GetProductListReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetProductListReq(%+v)", *p)
+}
+
+var fieldIDToName_GetProductListReq = map[int16]string{}
+
+type GetProductListResp struct {
+	BaseResp *base.BaseResp `thrift:"base_resp,1,required" frugal:"1,required,base.BaseResp" json:"base_resp"`
+	Products []*ProductInfo `thrift:"products,2" frugal:"2,default,list<ProductInfo>" json:"products"`
+}
+
+func NewGetProductListResp() *GetProductListResp {
+	return &GetProductListResp{}
+}
+
+func (p *GetProductListResp) InitDefault() {
+}
+
+var GetProductListResp_BaseResp_DEFAULT *base.BaseResp
+
+func (p *GetProductListResp) GetBaseResp() (v *base.BaseResp) {
+	if !p.IsSetBaseResp() {
+		return GetProductListResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+func (p *GetProductListResp) GetProducts() (v []*ProductInfo) {
+	return p.Products
+}
+func (p *GetProductListResp) SetBaseResp(val *base.BaseResp) {
+	p.BaseResp = val
+}
+func (p *GetProductListResp) SetProducts(val []*ProductInfo) {
+	p.Products = val
+}
+
+func (p *GetProductListResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *GetProductListResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("GetProductListResp(%+v)", *p)
+}
+
+var fieldIDToName_GetProductListResp = map[int16]string{
+	1: "base_resp",
+	2: "products",
 }
 
 type GetProductReq struct {
@@ -149,8 +251,145 @@ var fieldIDToName_GetProductResp = map[int16]string{
 	2: "product",
 }
 
+type HeatProductReq struct {
+}
+
+func NewHeatProductReq() *HeatProductReq {
+	return &HeatProductReq{}
+}
+
+func (p *HeatProductReq) InitDefault() {
+}
+
+func (p *HeatProductReq) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("HeatProductReq(%+v)", *p)
+}
+
+var fieldIDToName_HeatProductReq = map[int16]string{}
+
+type HeatProductResp struct {
+	BaseResp *base.BaseResp `thrift:"base_resp,1,required" frugal:"1,required,base.BaseResp" json:"base_resp"`
+}
+
+func NewHeatProductResp() *HeatProductResp {
+	return &HeatProductResp{}
+}
+
+func (p *HeatProductResp) InitDefault() {
+}
+
+var HeatProductResp_BaseResp_DEFAULT *base.BaseResp
+
+func (p *HeatProductResp) GetBaseResp() (v *base.BaseResp) {
+	if !p.IsSetBaseResp() {
+		return HeatProductResp_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+func (p *HeatProductResp) SetBaseResp(val *base.BaseResp) {
+	p.BaseResp = val
+}
+
+func (p *HeatProductResp) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *HeatProductResp) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("HeatProductResp(%+v)", *p)
+}
+
+var fieldIDToName_HeatProductResp = map[int16]string{
+	1: "base_resp",
+}
+
 type ProductService interface {
+	GetProductList(ctx context.Context, req *GetProductListReq) (r *GetProductListResp, err error)
+
 	GetProduct(ctx context.Context, req *GetProductReq) (r *GetProductResp, err error)
+
+	HeatProduct(ctx context.Context, req *HeatProductReq) (r *HeatProductResp, err error)
+}
+
+type ProductServiceGetProductListArgs struct {
+	Req *GetProductListReq `thrift:"req,1" frugal:"1,default,GetProductListReq" json:"req"`
+}
+
+func NewProductServiceGetProductListArgs() *ProductServiceGetProductListArgs {
+	return &ProductServiceGetProductListArgs{}
+}
+
+func (p *ProductServiceGetProductListArgs) InitDefault() {
+}
+
+var ProductServiceGetProductListArgs_Req_DEFAULT *GetProductListReq
+
+func (p *ProductServiceGetProductListArgs) GetReq() (v *GetProductListReq) {
+	if !p.IsSetReq() {
+		return ProductServiceGetProductListArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *ProductServiceGetProductListArgs) SetReq(val *GetProductListReq) {
+	p.Req = val
+}
+
+func (p *ProductServiceGetProductListArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *ProductServiceGetProductListArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ProductServiceGetProductListArgs(%+v)", *p)
+}
+
+var fieldIDToName_ProductServiceGetProductListArgs = map[int16]string{
+	1: "req",
+}
+
+type ProductServiceGetProductListResult struct {
+	Success *GetProductListResp `thrift:"success,0,optional" frugal:"0,optional,GetProductListResp" json:"success,omitempty"`
+}
+
+func NewProductServiceGetProductListResult() *ProductServiceGetProductListResult {
+	return &ProductServiceGetProductListResult{}
+}
+
+func (p *ProductServiceGetProductListResult) InitDefault() {
+}
+
+var ProductServiceGetProductListResult_Success_DEFAULT *GetProductListResp
+
+func (p *ProductServiceGetProductListResult) GetSuccess() (v *GetProductListResp) {
+	if !p.IsSetSuccess() {
+		return ProductServiceGetProductListResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *ProductServiceGetProductListResult) SetSuccess(x interface{}) {
+	p.Success = x.(*GetProductListResp)
+}
+
+func (p *ProductServiceGetProductListResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *ProductServiceGetProductListResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ProductServiceGetProductListResult(%+v)", *p)
+}
+
+var fieldIDToName_ProductServiceGetProductListResult = map[int16]string{
+	0: "success",
 }
 
 type ProductServiceGetProductArgs struct {
@@ -226,5 +465,81 @@ func (p *ProductServiceGetProductResult) String() string {
 }
 
 var fieldIDToName_ProductServiceGetProductResult = map[int16]string{
+	0: "success",
+}
+
+type ProductServiceHeatProductArgs struct {
+	Req *HeatProductReq `thrift:"req,1" frugal:"1,default,HeatProductReq" json:"req"`
+}
+
+func NewProductServiceHeatProductArgs() *ProductServiceHeatProductArgs {
+	return &ProductServiceHeatProductArgs{}
+}
+
+func (p *ProductServiceHeatProductArgs) InitDefault() {
+}
+
+var ProductServiceHeatProductArgs_Req_DEFAULT *HeatProductReq
+
+func (p *ProductServiceHeatProductArgs) GetReq() (v *HeatProductReq) {
+	if !p.IsSetReq() {
+		return ProductServiceHeatProductArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+func (p *ProductServiceHeatProductArgs) SetReq(val *HeatProductReq) {
+	p.Req = val
+}
+
+func (p *ProductServiceHeatProductArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *ProductServiceHeatProductArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ProductServiceHeatProductArgs(%+v)", *p)
+}
+
+var fieldIDToName_ProductServiceHeatProductArgs = map[int16]string{
+	1: "req",
+}
+
+type ProductServiceHeatProductResult struct {
+	Success *HeatProductResp `thrift:"success,0,optional" frugal:"0,optional,HeatProductResp" json:"success,omitempty"`
+}
+
+func NewProductServiceHeatProductResult() *ProductServiceHeatProductResult {
+	return &ProductServiceHeatProductResult{}
+}
+
+func (p *ProductServiceHeatProductResult) InitDefault() {
+}
+
+var ProductServiceHeatProductResult_Success_DEFAULT *HeatProductResp
+
+func (p *ProductServiceHeatProductResult) GetSuccess() (v *HeatProductResp) {
+	if !p.IsSetSuccess() {
+		return ProductServiceHeatProductResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *ProductServiceHeatProductResult) SetSuccess(x interface{}) {
+	p.Success = x.(*HeatProductResp)
+}
+
+func (p *ProductServiceHeatProductResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *ProductServiceHeatProductResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ProductServiceHeatProductResult(%+v)", *p)
+}
+
+var fieldIDToName_ProductServiceHeatProductResult = map[int16]string{
 	0: "success",
 }

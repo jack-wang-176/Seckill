@@ -13,6 +13,7 @@ import (
 )
 
 // var Client *redis.Client
+// 这里记得去把这个context通过注入和前面路由触发的context关联起来
 var ctx = context.Background()
 
 var (

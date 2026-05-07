@@ -1,8 +1,21 @@
 package product
 
 import (
+	"full_backend_practice/infrastructure/mq"
+
 	"gorm.io/gorm"
 )
+
+type productDBWrapper struct {
+	DB *gorm.DB
+}
+
+func NewProductMysql(db *gorm.DB) ProductDatabase {
+	_ = db.AutoMigrate(&Product{})
+	return &productDBWrapper{
+		DB: db,
+	}
+}
 
 type Product struct {
 	gorm.Model
@@ -14,3 +27,6 @@ type Product struct {
 	StartTime    int64   `gorm:"type:bigint;not null"`
 	EndTime      int64   `gorm:"type:bigint;not null"`
 }
+
+func (p *productDBWrapper) GetProductList(msg mq.ProductMessage) ([]Product, error) {}
+func (p *productDBWrapper) GetProduct(msg mq.ProductMessage) (Product, error)       {}

@@ -21,6 +21,9 @@ type UserMessage struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+type ProductMessage struct {
+	ProductID uint64 `json:"product_id"`
+}
 type RabbitClient struct {
 	Conn    *amqp091.Connection
 	Channel *amqp091.Channel

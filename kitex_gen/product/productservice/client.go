@@ -11,7 +11,9 @@ import (
 
 // Client is designed to provide IDL-compatible methods with call-option parameter for kitex framework.
 type Client interface {
+	GetProductList(ctx context.Context, req *product.GetProductListReq, callOptions ...callopt.Option) (r *product.GetProductListResp, err error)
 	GetProduct(ctx context.Context, req *product.GetProductReq, callOptions ...callopt.Option) (r *product.GetProductResp, err error)
+	HeatProduct(ctx context.Context, req *product.HeatProductReq, callOptions ...callopt.Option) (r *product.HeatProductResp, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -43,7 +45,17 @@ type kProductServiceClient struct {
 	*kClient
 }
 
+func (p *kProductServiceClient) GetProductList(ctx context.Context, req *product.GetProductListReq, callOptions ...callopt.Option) (r *product.GetProductListResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetProductList(ctx, req)
+}
+
 func (p *kProductServiceClient) GetProduct(ctx context.Context, req *product.GetProductReq, callOptions ...callopt.Option) (r *product.GetProductResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.GetProduct(ctx, req)
+}
+
+func (p *kProductServiceClient) HeatProduct(ctx context.Context, req *product.HeatProductReq, callOptions ...callopt.Option) (r *product.HeatProductResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.HeatProduct(ctx, req)
 }

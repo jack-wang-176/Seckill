@@ -6,8 +6,8 @@ struct ProductInfo {
     2: string name
     3: double price
     5: double seckill_prict
-    6: int32 stock
-    7: int32 version
+    6: i32 stock
+    7: i32 version
     8: string start_time
     9: string end_time
 }
