@@ -9,8 +9,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func InitProdductRpc(l *zap.Logger) (productservice.Client, error) {
-	r, err := etcd.NewEtcdResolver([]string{"128.0.0.1:2379"})
+func InitProductRpc(l *zap.Logger) (productservice.Client, error) {
+	r, err := etcd.NewEtcdResolver([]string{"127.0.0.1:2379"})
 	if err != nil {
 		if l != nil {
 			l.Info("fail to create etcd resolver")
@@ -18,7 +18,7 @@ func InitProdductRpc(l *zap.Logger) (productservice.Client, error) {
 		return nil, err
 	}
 	clientImpl, err := productservice.NewClient(
-		"product-service",
+		"product_service",
 		client.WithResolver(r),
 		client.WithLoadBalancer(loadbalance.NewWeightedRoundRobinBalancer()),
 	)

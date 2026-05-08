@@ -39,3 +39,7 @@ func (p *productDBWrapper) GetProduct(msg mq.ProductMessage) (Product, error) {
 	err := p.DB.Where("id = ?", msg.ProductID).First(&product).Error
 	return product, err
 }
+
+func (p *productDBWrapper) CreateProduct(product *Product) error {
+	return p.DB.Create(product).Error
+}

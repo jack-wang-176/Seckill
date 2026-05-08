@@ -129,6 +129,53 @@ func (s *productServiceImpl) GetProduct(ctx context.Context, req *product.GetPro
 	return resp, nil
 }
 
+// CreateProduct 直接写入 MySQL，并在成功后清理相关缓存
+func (s *productServiceImpl) CreateProduct(ctx context.Context, req *product.CreateProductReq) (resp *product.CreateProductResp, err error) {
+	resp = new(product.CreateProductResp)
+	resp.BaseResp = response.BuildBaseResp(response.CodeOK, "success")
+
+	if req == nil || req.Name == "" {
+		resp.BaseResp = response.BuildBaseResp(response.CodeInvalidParams, "name is required")
+		return resp, nil
+	}
+	if req.StartTime <= 0 || req.EndTime <= 0 || req.StartTime >= req.EndTime {
+		resp.BaseResp = response.BuildBaseResp(response.CodeInvalidParams, "invalid activity time")
+		return resp, nil
+	}
+
+	prod := &Product{
+		Name:         req.Name,
+		Price:        req.Price,
+		SeckillPrice: req.SeckillPrict,
+		Stock:        int(req.Stock),
+		Version:      int(req.Version),
+		StartTime:    req.StartTime,
+		EndTime:      req.EndTime,
+	}
+
+	if err := s.MySqlWrapper.CreateProduct(prod); err != nil {
+		s.Logger.Error("Failed to create product", zap.Error(err))
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to create product")
+		return resp, nil
+	}
+
+	if s.RedisWrapper != nil {
+		_, _ = s.RedisWrapper.Client.Del(ctx, "product:list", fmt.Sprintf("product:%d", prod.ID)).Result()
+	}
+
+	resp.Product = &product.ProductInfo{
+		Id:           int64(prod.ID),
+		Name:         prod.Name,
+		Price:        prod.Price,
+		SeckillPrict: prod.SeckillPrice,
+		Stock:        int32(prod.Stock),
+		Version:      int32(prod.Version),
+		StartTime:    fmt.Sprintf("%d", prod.StartTime),
+		EndTime:      fmt.Sprintf("%d", prod.EndTime),
+	}
+	return resp, nil
+}
+
 // HeatProduct implements the ProductServiceImpl interface.
 func (s *productServiceImpl) HeatProduct(ctx context.Context, req *product.HeatProductReq) (resp *product.HeatProductResp, err error) {
 	resp = new(product.HeatProductResp)

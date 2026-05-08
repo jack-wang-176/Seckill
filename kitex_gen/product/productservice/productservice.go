@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	product "full_backend_practice/kitex_gen/product"
+
 	client "github.com/cloudwego/kitex/client"
 	kitex "github.com/cloudwego/kitex/pkg/serviceinfo"
 )
@@ -24,6 +25,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		getProductHandler,
 		newProductServiceGetProductArgs,
 		newProductServiceGetProductResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"CreateProduct": kitex.NewMethodInfo(
+		createProductHandler,
+		newProductServiceCreateProductArgs,
+		newProductServiceCreateProductResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
@@ -136,6 +144,24 @@ func newProductServiceGetProductResult() interface{} {
 	return product.NewProductServiceGetProductResult()
 }
 
+func createProductHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*product.ProductServiceCreateProductArgs)
+	realResult := result.(*product.ProductServiceCreateProductResult)
+	success, err := handler.(product.ProductService).CreateProduct(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newProductServiceCreateProductArgs() interface{} {
+	return product.NewProductServiceCreateProductArgs()
+}
+
+func newProductServiceCreateProductResult() interface{} {
+	return product.NewProductServiceCreateProductResult()
+}
+
 func heatProductHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	realArg := arg.(*product.ProductServiceHeatProductArgs)
 	realResult := result.(*product.ProductServiceHeatProductResult)
@@ -179,6 +205,16 @@ func (p *kClient) GetProduct(ctx context.Context, req *product.GetProductReq) (r
 	_args.Req = req
 	var _result product.ProductServiceGetProductResult
 	if err = p.c.Call(ctx, "GetProduct", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) CreateProduct(ctx context.Context, req *product.CreateProductReq) (r *product.CreateProductResp, err error) {
+	var _args product.ProductServiceCreateProductArgs
+	_args.Req = req
+	var _result product.ProductServiceCreateProductResult
+	if err = p.c.Call(ctx, "CreateProduct", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

@@ -1,5 +1,6 @@
 #! /usr/bin/env bash
 CURDIR=$(cd $(dirname $0); pwd)
+RUN_NAME="${RUN_NAME:-seckill.order}"
 
 if [ "X$1" != "X" ]; then
     RUNTIME_ROOT=$1
@@ -18,4 +19,4 @@ if [ ! -d "$KITEX_LOG_DIR/rpc" ]; then
     mkdir -p "$KITEX_LOG_DIR/rpc"
 fi
 
-exec "$CURDIR/bin/seckill.order"
+exec "$CURDIR/bin/$RUN_NAME"

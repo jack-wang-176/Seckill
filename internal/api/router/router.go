@@ -20,6 +20,7 @@ func Register(h *server.Hertz, userH *handler.UserHandler, orderH *handler.Order
 	{
 		productGroup.GET("/list", productH.GetProductList)
 		productGroup.GET("/:id", productH.GetProduct)
+		productGroup.POST("/create", productH.CreateProduct)
 		productGroup.POST("/heat", productH.HeatProduct)
 	}
 	seckillGroup := v1.Group("/seckill", middleware.AuthMiddleWare())

@@ -16,7 +16,7 @@ func buildContainer() *dig.Container {
 	c.Provide(logger.InitLogger)
 	c.Provide(rpc.InitOrderRpc)
 	c.Provide(rpc.InitUserRpc)
-	c.Provide(rpc.InitProdductRpc)
+	c.Provide(rpc.InitProductRpc)
 	c.Provide(handler.NewUserHandler)
 	c.Provide(handler.NewOrderHandler)
 	c.Provide(handler.NewProductServiceHandler)

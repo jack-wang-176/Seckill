@@ -5,6 +5,7 @@ package productservice
 import (
 	"context"
 	product "full_backend_practice/kitex_gen/product"
+
 	client "github.com/cloudwego/kitex/client"
 	callopt "github.com/cloudwego/kitex/client/callopt"
 )
@@ -13,6 +14,7 @@ import (
 type Client interface {
 	GetProductList(ctx context.Context, req *product.GetProductListReq, callOptions ...callopt.Option) (r *product.GetProductListResp, err error)
 	GetProduct(ctx context.Context, req *product.GetProductReq, callOptions ...callopt.Option) (r *product.GetProductResp, err error)
+	CreateProduct(ctx context.Context, req *product.CreateProductReq, callOptions ...callopt.Option) (r *product.CreateProductResp, err error)
 	HeatProduct(ctx context.Context, req *product.HeatProductReq, callOptions ...callopt.Option) (r *product.HeatProductResp, err error)
 }
 
@@ -53,6 +55,11 @@ func (p *kProductServiceClient) GetProductList(ctx context.Context, req *product
 func (p *kProductServiceClient) GetProduct(ctx context.Context, req *product.GetProductReq, callOptions ...callopt.Option) (r *product.GetProductResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.GetProduct(ctx, req)
+}
+
+func (p *kProductServiceClient) CreateProduct(ctx context.Context, req *product.CreateProductReq, callOptions ...callopt.Option) (r *product.CreateProductResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.CreateProduct(ctx, req)
 }
 
 func (p *kProductServiceClient) HeatProduct(ctx context.Context, req *product.HeatProductReq, callOptions ...callopt.Option) (r *product.HeatProductResp, err error) {

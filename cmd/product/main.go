@@ -26,7 +26,7 @@ func provideConfigs(c *dig.Container) {
 		return &config.RedisConfig{Addr: "127.0.0.1:6379", Password: "", DB: 0}
 	})
 	c.Provide(func() *config.RabbitMQConfig {
-		return &config.RabbitMQConfig{URL: "amqp://guest:guest@127.0.0.1:5672/", Queues: []string{"order_seckill"}}
+		return &config.RabbitMQConfig{URL: "amqp://guest:guest@127.0.0.1:5672/", Queues: []string{"product_list", "product_single"}}
 	})
 	c.Provide(func() *config.EtcdConfig {
 		return &config.EtcdConfig{Endpoints: []string{"127.0.0.1:2379"}}
