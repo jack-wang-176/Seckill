@@ -254,23 +254,23 @@ auto_start_services() {
     # 启动本地微服务（如果未运行）
     print_info "检查本地微服务状态..."
 
-    if ! port_is_listening 8888; then
+    if ! port_is_listening 8889; then
         print_info "启动用户服务..."
         (cd "$PROJECT_ROOT" && nohup make run-user > "$PROJECT_ROOT/test/load/bin/run-user.log" 2>&1 &)
     fi
-    if ! port_is_listening 8889; then
+    if ! port_is_listening 8890; then
         print_info "启动商品服务..."
         (cd "$PROJECT_ROOT" && nohup make run-product > "$PROJECT_ROOT/test/load/bin/run-product.log" 2>&1 &)
     fi
-    if ! port_is_listening 8890; then
+    if ! port_is_listening 8891; then
         print_info "启动订单服务..."
         (cd "$PROJECT_ROOT" && nohup make run-order > "$PROJECT_ROOT/test/load/bin/run-order.log" 2>&1 &)
     fi
 
     # 等待 RPC 服务就绪
-    wait_for_port 8888 "用户服务" || return 1
-    wait_for_port 8889 "商品服务" || return 1
-    wait_for_port 8890 "订单服务" || return 1
+    wait_for_port 8889 "用户服务" || return 1
+    wait_for_port 8890 "商品服务" || return 1
+    wait_for_port 8891 "订单服务" || return 1
 
     # 启动 API Gateway（默认端口为 8081，可由 url 覆盖）
     local gateway_port

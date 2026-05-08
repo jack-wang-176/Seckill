@@ -24,7 +24,7 @@
 │   User   │ │ Product  │ │   Order    │ │  Redis  │
 │ Service  │ │ Service  │ │  Service   │ │ (Cache) │
 │ (Port    │ │ (Port    │ │ (Port      │ │ (Port   │
-│ 8888)    │ │ 8889)    │ │ 8890)      │ │ 6379)   │
+│ 8889)    │ │ 8890)    │ │ 8891)      │ │ 6379)   │
 └──────────┘ └──────────┘ └────────────┘ └────────┬─┘
        │          │              │          │
        └──────────┴──────────────┴──────────┘
@@ -73,7 +73,7 @@ docker-compose -f config/docker-compose.yml ps
 
 ```bash
 # 编译所有服务
-make build-api make build-order make build-product make build-user
+make build-api && make build-order && make build-product && make build-user
 
 # 或者在不同终端分别运行
 make run-api

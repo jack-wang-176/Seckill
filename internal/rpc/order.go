@@ -19,7 +19,7 @@ func InitOrderRpc(l *zap.Logger) (orderservice.Client, error) {
 	}
 
 	clientImpl, err := orderservice.NewClient(
-		"order-service",
+		"order_service",
 		client.WithResolver(r),
 		client.WithLoadBalancer(loadbalance.NewWeightedRoundRobinBalancer()),
 	)

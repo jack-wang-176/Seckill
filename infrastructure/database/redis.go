@@ -67,16 +67,16 @@ func (rw *RedisWrapper) SimpleDecrStock(ctx context.Context, stockFirst []string
 	return result
 }
 
-func (rw *RedisWrapper) SetPath(ctx context.Context, path, key string) error {
-	return rw.Client.Set(ctx, path, key, 60*(time.Second)).Err()
+func (rw *RedisWrapper) SetPath(ctx context.Context, key, value string) error {
+	return rw.Client.Set(ctx, key, value, 60*(time.Second)).Err()
 }
 
 func (rw *RedisWrapper) ConfirmPaht(ctx context.Context, path, key string) (bool, error) {
-	val, err := rw.Client.Get(ctx, path).Result()
+	val, err := rw.Client.Get(ctx, key).Result()
 	if err != nil {
 		return false, err
 	}
-	return val == key, nil
+	return val == path, nil
 }
 
 // 这里临时的设置set的持续时间段，后续应该维护一个添加对应product的开始时间和结束时间，并根据当下的时间来动态设置对应字段的持续时间

@@ -34,52 +34,48 @@ func provideConfigs(c *dig.Container) {
 	})
 }
 
-package main
-
-import (
-	"os" // 新增
-	"full_backend_practice/infrastructure/logger"
-	"full_backend_practice/internal/api/handler"
-	"full_backend_practice/internal/api/router"
-	"full_backend_practice/internal/rpc"
-
-	"github.com/cloudwego/hertz/pkg/app/server"
-	"go.uber.org/dig"
-	"go.uber.org/zap"
-)
-
-// ... buildContainer 保持不变 ...
 func buildContainer() *dig.Container {
 	c := dig.New()
+	provideConfigs(c)
+
 	c.Provide(logger.InitLogger)
-	c.Provide(rpc.InitOrderRpc)
-	c.Provide(rpc.InitUserRpc)
-	c.Provide(rpc.InitProductRpc)
-	c.Provide(handler.NewUserHandler)
-	c.Provide(handler.NewOrderHandler)
-	c.Provide(handler.NewProductServiceHandler)
+	c.Provide(database.InitMYSQL)
+	c.Provide(order.NewOrderMysql)
+	c.Provide(database.InitRedis)
+	c.Provide(database.NewRedisWrapper)
+	c.Provide(mq.InitRabbitMQ)
+
+	c.Provide(order.NewOrderServiceImpl)
+	c.Provide(order.NewOrderConsumer)
 	return c
 }
 
 func main() {
-	container := buildContainer()
-	err := container.Invoke(func(
-		userH *handler.UserHandler,
-		orderH *handler.OrderHandler,
-		productH *handler.ProductServiceHandler,
+	c := buildContainer()
+	err := c.Invoke(func(impl order.OrderServiceImpl,
+		consumer order.OrderConsumer,
+		etcdCfg *config.EtcdConfig,
 		log *zap.Logger,
-	) {
-		// 动态获取端口，默认为 8080
-		port := os.Getenv("API_GATEWAY_PORT")
-		if port == "" {
-			port = "8080"
-		}
-		addr := "0.0.0.0:" + port
+	) error {
+		log.Info("Starting Application of order service...")
+		consumer.StartConsumer()
+		log.Info("Order Consumer Started")
 
-		h := server.Default(server.WithHostPorts(addr))
-		log.Info("Starting API Gateway on " + addr + "...")
-		router.Register(h, userH, orderH, productH)
-		h.Spin()
+		r, err := etcd.NewEtcdRegistry(etcdCfg.Endpoints)
+		if err != nil {
+			log.Error("Failed to create etcd registry", zap.Error(err))
+			return err
+		}
+
+		addr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:8891")
+		svr := orderservice.NewServer(
+			impl,
+			server.WithServiceAddr(addr),
+			server.WithRegistry(r),
+			server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "order_service"}),
+		)
+		log.Info("Order Service RPC Server is running on 0.0.0.0:8891")
+		return svr.Run()
 	})
 	if err != nil {
 		panic(err)

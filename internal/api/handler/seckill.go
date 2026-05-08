@@ -33,7 +33,7 @@ func (h *OrderHandler) CreateOrder(c context.Context, ctx *app.RequestContext) {
 		response.Error(ctx, 401, "user_id not exists")
 		return
 	}
-	userID := userIDVal.(int64)
+	userID := int64(userIDVal.(uint))
 	var req SeckillReq
 	if err := ctx.BindAndValidate(&req); err != nil {
 		response.Error(ctx, 400, err.Error())
@@ -82,7 +82,7 @@ func (h *OrderHandler) OrderPath(c context.Context, ctx *app.RequestContext) {
 		response.Error(ctx, 401, "user_id not exists")
 		return
 	}
-	userID := userIDVal.(int64)
+	userID := int64(userIDVal.(uint))
 	var req SeckillReq
 	if err := ctx.BindAndValidate(&req); err != nil {
 		response.Error(ctx, 400, err.Error())
@@ -107,7 +107,7 @@ func (h *OrderHandler) OrderResult(c context.Context, ctx *app.RequestContext) {
 		response.Error(ctx, 401, "user_id not exists")
 		return
 	}
-	userID := userIDVal.(int64)
+	userID := int64(userIDVal.(uint))
 	var req SeckillReq
 	if err := ctx.BindAndValidate(&req); err != nil {
 		response.Error(ctx, 400, err.Error())
