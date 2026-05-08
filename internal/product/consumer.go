@@ -53,7 +53,7 @@ func (p *productConsumer) StartListConsumer() {
 				continue
 			}
 
-			// 缓存结果到 Redis，供 API 层读取
+			// 缓存结果到 Redis
 			key := "product:list"
 			b, err := json.Marshal(products)
 			if err == nil {
