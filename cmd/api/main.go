@@ -5,6 +5,7 @@ import (
 	"full_backend_practice/internal/api/handler"
 	"full_backend_practice/internal/api/router"
 	"full_backend_practice/internal/rpc"
+	"os"
 
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"go.uber.org/dig"
@@ -31,10 +32,15 @@ func main() {
 		productH *handler.ProductServiceHandler,
 		log *zap.Logger,
 	) {
-		h := server.Default(server.WithHostPorts("0.0.0.0:8080"))
+		port := os.Getenv("API_GATEWAY_PORT")
+		if port == "" {
+			port = "8081"
+		}
+		hostPort := "0.0.0.0:" + port
+		h := server.Default(server.WithHostPorts(hostPort))
 		log.Info("Starting API Gateway...")
 		router.Register(h, userH, orderH, productH)
-		log.Info("API Gateway is running on 0.0.0.0:8080")
+		log.Info("API Gateway is running on " + hostPort)
 		h.Spin()
 	})
 	if err != nil {

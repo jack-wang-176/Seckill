@@ -18,6 +18,11 @@ type userDBWrapper struct {
 	DB *gorm.DB
 }
 
+func NewUserMysql(db *gorm.DB) UserDatabase {
+	_ = db.AutoMigrate(&User{})
+	return &userDBWrapper{DB: db}
+}
+
 func (m *userDBWrapper) RegisterUser(msg mq.UserMessage) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error {
 		err := m.FindUser(msg)

@@ -13,7 +13,7 @@ func Register(h *server.Hertz, userH *handler.UserHandler, orderH *handler.Order
 	userGroup := v1.Group("/user")
 	{
 		userGroup.POST("/register", userH.Register)
-		userGroup.GET("/login", userH.Login)
+		userGroup.POST("/login", userH.Login)
 	}
 	// 产品相关路由
 	productGroup := v1.Group("/product")

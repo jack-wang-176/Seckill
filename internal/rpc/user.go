@@ -18,7 +18,7 @@ func InitUserRpc(l *zap.Logger) (userservice.Client, error) {
 		return nil, err
 	}
 	clientImpl, err := userservice.NewClient(
-		"user-service",
+		"user_service",
 		client.WithResolver(r),
 		client.WithLoadBalancer(loadbalance.NewWeightedRoundRobinBalancer()),
 	)

@@ -21,7 +21,7 @@ type productServiceImpl struct {
 	Logger       *zap.Logger
 }
 
-func NewProductServiceImpl(mr ProductDatabase, rw *database.RedisWrapper, mq *mq.RabbitClient, logger *zap.Logger) *productServiceImpl {
+func NewProductServiceImpl(mr ProductDatabase, rw *database.RedisWrapper, mq *mq.RabbitClient, logger *zap.Logger) ProductServiceImpl {
 	return &productServiceImpl{
 		MySqlWrapper: mr,
 		RedisWrapper: rw,

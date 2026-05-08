@@ -22,6 +22,18 @@ func NewConsumer(mr UserDatabase, mq *mq.RabbitClient, log *zap.Logger) UserCons
 }
 
 func (u *userConsumer) StartRegisterConsumer() {
+	_, qerr := u.MQ.Channel.QueueDeclare(
+		"user_register",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if qerr != nil {
+		u.Logger.Fatal("MQ queue declare error", zap.Error(qerr))
+	}
+
 	msgs, err := u.MQ.Channel.Consume(
 		"user_register", "", false, false, false, false, nil,
 	)

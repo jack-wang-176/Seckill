@@ -51,6 +51,12 @@
 # 轻量级压测（本地开发）
 ./script/run-benchmark.sh light
 
+# 指定网关端口（避免默认 8081）
+./script/run-benchmark.sh light -port 8081
+
+# 指定网关地址并跳过自动启动容器
+./script/run-benchmark.sh custom -url http://localhost:8081 -no-auto-start
+
 # 中等压测（预发布环境）
 ./script/run-benchmark.sh medium
 
@@ -94,7 +100,7 @@ go build -o test/load/bin/seckill_benchmark ./test/load
 
 # 使用自定义参数
 ./test/load/bin/seckill_benchmark \
-  -url http://api.example.com:8080 \
+  -url http://api.example.com:8081 \
   -concurrency 500 \
   -duration 60s \
   -product 1 \
@@ -111,7 +117,7 @@ go build -o test/load/bin/seckill_benchmark ./test/load
 docker-compose -f config/docker-compose.yml up -d
 
 # 验证服务是否启动
-curl http://localhost:8080/api/v1/product/list
+curl http://localhost:8081/api/v1/product/list
 ```
 
 ### 第二步：运行压测
@@ -161,12 +167,15 @@ QPS：150 请求/秒
 
 | 参数 | 默认值 | 说明 | 示例 |
 |------|------|------|------|
-| `-url` | `http://localhost:8080` | API Gateway 地址 | `-url http://api.example.com:8080` |
+| `-url` | `http://localhost:8081` | API Gateway 地址 | `-url http://api.example.com:8081` |
+| `-port` | `8081` | API Gateway 端口（脚本专用） | `-port 8081` |
 | `-concurrency` | `100` | 并发数（Goroutine 数量） | `-concurrency 500` |
 | `-duration` | `30s` | 压测持续时间 | `-duration 60s` |
 | `-product` | `1` | 商品 ID | `-product 2` |
 | `-users` | `500` | 测试用户总数 | `-users 1000` |
 | `-rampup` | `5s` | 梯度增压时间 | `-rampup 10s` |
+
+> 说明：`-port` 和 `-no-auto-start` 是 `script/run-benchmark.sh` 的脚本级参数，不会传递给压测二进制。
 
 ## 📈 压测场景模板
 
@@ -174,7 +183,7 @@ QPS：150 请求/秒
 
 ```bash
 ./script/run-benchmark.sh custom \
-  -url http://localhost:8080 \
+  -url http://localhost:8081 \
   -concurrency 50 \
   -duration 60s \
   -users 200 \
@@ -245,7 +254,7 @@ docker-compose ps
 docker-compose logs api-gateway
 
 # 尝试手动请求
-curl http://localhost:8080/api/v1/product/list
+curl http://localhost:8081/api/v1/product/list
 ```
 
 **解决方案**：
@@ -260,7 +269,7 @@ curl http://localhost:8080/api/v1/product/list
 docker-compose logs user-service
 
 # 手动注册用户
-curl -X POST http://localhost:8080/api/v1/user/register \
+curl -X POST http://localhost:8081/api/v1/user/register \
   -H "Content-Type: application/json" \
   -d '{"username": "testuser", "password": "password123"}'
 ```
@@ -274,7 +283,7 @@ curl -X POST http://localhost:8080/api/v1/user/register \
 
 ```bash
 # 检查商品是否存在
-curl http://localhost:8080/api/v1/product/list
+curl http://localhost:8081/api/v1/product/list
 
 # 检查秒杀是否在时间窗口内
 # 查看 product 表中 start_time 和 end_time
@@ -377,7 +386,7 @@ done
 ```bash
 # 连接到远程服务器进行压测
 ./test/load/bin/seckill_benchmark \
-  -url http://staging.example.com:8080 \
+  -url http://staging.example.com:8081 \
   -concurrency 500 \
   -duration 60s \
   -users 1000

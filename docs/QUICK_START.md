@@ -43,7 +43,7 @@ make clean-benchmark        # 清理
 
 | 参数 | 默认值 | 示例 |
 |------|--------|------|
-| `-url` | `http://localhost:8080` | `-url http://api.example.com` |
+| `-url` | `http://localhost:8081` | `-url http://api.example.com:8081` |
 | `-concurrency` | `100` | `-concurrency 500` |
 | `-duration` | `30s` | `-duration 60s` |
 | `-product` | `1` | `-product 2` |
@@ -79,7 +79,7 @@ make clean-benchmark        # 清理
 docker-compose up -d
 
 # 验证服务
-curl http://localhost:8080/api/v1/product/list
+curl http://localhost:8081/api/v1/product/list
 
 # 查看日志
 docker-compose logs -f api-gateway
@@ -125,7 +125,7 @@ P99             - 99% 的请求延迟（尾部延迟）
 |------|---------|
 | 无法连接到服务 | `docker-compose up -d` |
 | 用户生成失败 | 检查用户服务：`docker-compose logs user-service` |
-| 请求全部失败 | 验证商品存在：`curl http://localhost:8080/api/v1/product/list` |
+| 请求全部失败 | 验证商品存在：`curl http://localhost:8081/api/v1/product/list` |
 | QPS 很低 | 增加并发数：`-concurrency 1000` |
 | 失败率高 | 增加用户数：`-users 2000` |
 

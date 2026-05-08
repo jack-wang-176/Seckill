@@ -39,7 +39,7 @@ go run ./test/load/seckill_benchmark.go
 
 | 参数 | 默认值 | 说明 | 示例 |
 |------|------|------|------|
-| `-url` | `http://localhost:8080` | API Gateway 地址 | `-url http://api.example.com:8080` |
+| `-url` | `http://localhost:8081` | API Gateway 地址 | `-url http://api.example.com:8081` |
 | `-concurrency` | `100` | 并发数（Goroutine 数量） | `-concurrency 500` |
 | `-duration` | `30s` | 压测持续时间 | `-duration 60s` |
 | `-product` | `1` | 商品 ID | `-product 2` |
@@ -52,7 +52,7 @@ go run ./test/load/seckill_benchmark.go
 
 ```bash
 go run ./test/load/seckill_benchmark.go \
-  -url http://localhost:8080 \
+   -url http://localhost:8081 \
   -concurrency 50 \
   -duration 20s \
   -users 200
@@ -229,7 +229,7 @@ done
 **解决**：
 1. 检查 API Gateway 是否启动
    ```bash
-   curl http://localhost:8080/api/v1/user/register
+   curl http://localhost:8081/api/v1/user/register
    ```
 
 2. 检查用户服务是否可用
@@ -244,7 +244,7 @@ done
 **解决**：
 1. 检查商品是否存在
    ```bash
-   curl http://localhost:8080/api/v1/product/list
+   curl http://localhost:8081/api/v1/product/list
    ```
 
 2. 确认秒杀时间窗口有效

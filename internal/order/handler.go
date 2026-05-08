@@ -101,7 +101,7 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	resp.BaseResp = response.BuildBaseResp(response.CodeOK, "seckill success")
 	return resp, nil
 }
-func (s *orderServiceImpl) SeckillPath(ctx context.Context, req *order.GetSeckillPathReq) (resp *order.GetSeckillPathResp, err error) {
+func (s *orderServiceImpl) GetSeckillPath(ctx context.Context, req *order.GetSeckillPathReq) (resp *order.GetSeckillPathResp, err error) {
 	resp = new(order.GetSeckillPathResp)
 	resp.BaseResp = &base.BaseResp{}
 	salt := fmt.Sprintf("May@)@#)(*&^$#@!%s", time.Now().String())

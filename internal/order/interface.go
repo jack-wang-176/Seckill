@@ -8,7 +8,7 @@ import (
 
 type OrderServiceImpl interface {
 	Seckill(ctx context.Context, req *order.SeckillReq) (resp *order.SeckillResp, err error)
-	SeckillPath(ctx context.Context, req *order.GetSeckillPathReq) (resp *order.GetSeckillPathResp, err error)
+	GetSeckillPath(ctx context.Context, req *order.GetSeckillPathReq) (resp *order.GetSeckillPathResp, err error)
 	GetSeckillResult_(ctx context.Context, req *order.GetSeckillResultReq) (resp *order.GetSeckillResultResp, err error)
 }
 

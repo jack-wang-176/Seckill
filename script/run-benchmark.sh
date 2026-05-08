@@ -33,6 +33,92 @@ print_error() {
     echo -e "${RED}[✗]${NC} $1"
 }
 
+port_is_listening() {
+    local port=$1
+    lsof -nP -iTCP:"$port" -sTCP:LISTEN > /dev/null 2>&1
+}
+
+wait_for_port() {
+    local port=$1
+    local label=$2
+    local max_retries=30
+    local retry=0
+
+    while [ $retry -lt $max_retries ]; do
+        if port_is_listening "$port"; then
+            print_success "$label 已启动: $port"
+            return 0
+        fi
+        retry=$((retry + 1))
+        echo -ne "\r等待 $label 启动... ($retry/$max_retries)"
+        sleep 1
+    done
+
+    echo ""
+    print_error "$label 启动超时: $port"
+    return 1
+}
+
+extract_port_from_url() {
+    local input_url="$1"
+    local without_scheme="${input_url#*://}"
+    local host_port="${without_scheme%%/*}"
+
+    if [[ "$host_port" == *:* ]]; then
+        echo "${host_port##*:}"
+    else
+        echo "8081"
+    fi
+}
+
+# 解析目标地址与透传参数
+resolve_target() {
+    local default_url="${BENCHMARK_URL:-http://localhost:8081}"
+    local resolved_url="$default_url"
+    local remaining=()
+    SKIP_AUTO_START=false
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -url|--url)
+                if [ $# -lt 2 ]; then
+                    print_error "-url 需要提供值"
+                    return 1
+                fi
+                resolved_url="$2"
+                shift 2
+                ;;
+            --url=*)
+                resolved_url="${1#*=}"
+                shift
+                ;;
+            -port|--port)
+                if [ $# -lt 2 ]; then
+                    print_error "-port 需要提供值"
+                    return 1
+                fi
+                resolved_url="http://localhost:$2"
+                shift 2
+                ;;
+            --port=*)
+                resolved_url="http://localhost:${1#*=}"
+                shift
+                ;;
+            -no-auto-start)
+                SKIP_AUTO_START=true
+                shift
+                ;;
+            *)
+                remaining+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    TARGET_URL="$resolved_url"
+    TARGET_ARGS=("${remaining[@]}")
+}
+
 # 检查服务是否运行
 check_service() {
     local url=$1
@@ -40,7 +126,7 @@ check_service() {
     local retry=0
 
     while [ $retry -lt $max_retries ]; do
-        if curl -s "$url/api/v1/product/list" > /dev/null 2>&1; then
+        if curl -fsS "$url/api/v1/product/list" > /dev/null 2>&1; then
             print_success "服务已启动: $url"
             return 0
         fi
@@ -84,7 +170,8 @@ ${GREEN}秒杀系统压测快速启动脚本${NC}
   ${BLUE}help${NC}      - 显示本帮助信息
 
 自定义参数:
-  -url          API Gateway 地址 (默认: http://localhost:8080)
+    -url          API Gateway 地址 (默认: http://localhost:8081)
+    -port         API Gateway 端口 (默认: 8081)
   -concurrency  并发数 (默认: 100)
   -duration     持续时间 (默认: 30s)
   -product      商品 ID (默认: 1)
@@ -101,8 +188,14 @@ ${GREEN}秒杀系统压测快速启动脚本${NC}
   # 自定义参数运行
   $0 custom -concurrency 1000 -duration 60s -users 2000
 
-  # 指定目标 URL
-  $0 light -url http://staging.example.com:8080
+    # 使用指定端口且跳过自动启动容器
+    $0 light -port 8081 -no-auto-start
+
+    # 指定目标 URL
+    $0 light -url http://staging.example.com:8081
+
+    # 指定目标端口
+    $0 light -port 8081
 EOF
 }
 
@@ -145,21 +238,52 @@ auto_start_services() {
         return 1
     fi
 
-    # 检查容器是否运行
-    if ! docker-compose -f "$PROJECT_ROOT/config/docker-compose.yml" ps | grep -q "Up"; then
+    # 启动基础设施容器
+    if cd "$PROJECT_ROOT" && docker compose -f config/docker-compose.yml ps | grep -q "Up"; then
+        print_success "服务容器已运行"
+    else
         print_warning "服务容器未运行，即将启动..."
-        if cd "$PROJECT_ROOT" && docker-compose -f config/docker-compose.yml up -d; then
+        if cd "$PROJECT_ROOT" && docker compose -f config/docker-compose.yml up -d; then
             print_success "服务容器已启动"
-            sleep 5
-            return 0
         else
             print_error "启动服务容器失败"
             return 1
         fi
-    else
-        print_success "服务容器已运行"
-        return 0
     fi
+
+    # 启动本地微服务（如果未运行）
+    print_info "检查本地微服务状态..."
+
+    if ! port_is_listening 8888; then
+        print_info "启动用户服务..."
+        (cd "$PROJECT_ROOT" && nohup make run-user > "$PROJECT_ROOT/test/load/bin/run-user.log" 2>&1 &)
+    fi
+    if ! port_is_listening 8889; then
+        print_info "启动商品服务..."
+        (cd "$PROJECT_ROOT" && nohup make run-product > "$PROJECT_ROOT/test/load/bin/run-product.log" 2>&1 &)
+    fi
+    if ! port_is_listening 8890; then
+        print_info "启动订单服务..."
+        (cd "$PROJECT_ROOT" && nohup make run-order > "$PROJECT_ROOT/test/load/bin/run-order.log" 2>&1 &)
+    fi
+
+    # 等待 RPC 服务就绪
+    wait_for_port 8888 "用户服务" || return 1
+    wait_for_port 8889 "商品服务" || return 1
+    wait_for_port 8890 "订单服务" || return 1
+
+    # 启动 API Gateway（默认端口为 8081，可由 url 覆盖）
+    local gateway_port
+    gateway_port=$(extract_port_from_url "$TARGET_URL")
+    export API_GATEWAY_PORT="$gateway_port"
+    if ! port_is_listening "$gateway_port"; then
+        print_info "启动 API Gateway..."
+        (cd "$PROJECT_ROOT" && nohup make run-api > "$PROJECT_ROOT/test/load/bin/run-api.log" 2>&1 &)
+    fi
+
+    wait_for_port "$gateway_port" "API Gateway" || return 1
+
+    return 0
 }
 
 # 主函数
@@ -183,8 +307,13 @@ main() {
 
     echo ""
 
+    # 解析目标地址与剩余参数
+    if ! resolve_target "$@"; then
+        return 1
+    fi
+
     # 自动启动服务（可选）
-    if [ "$mode" != "custom" ] || [[ " $@ " =~ " -no-auto-start " ]]; then
+    if [ "$mode" != "custom" ] && [ "$SKIP_AUTO_START" != true ]; then
         if ! auto_start_services; then
             print_warning "将使用已运行的服务继续压测..."
         fi
@@ -195,17 +324,17 @@ main() {
     # 根据模式执行
     case "$mode" in
         light)
-            run_benchmark "http://localhost:8080" -concurrency 50 -duration 20s -users 200 "$@"
+            run_benchmark "$TARGET_URL" -concurrency 50 -duration 20s -users 200 "${TARGET_ARGS[@]}"
             ;;
         medium)
-            run_benchmark "http://localhost:8080" -concurrency 500 -duration 60s -users 1000 -rampup 10s "$@"
+            run_benchmark "$TARGET_URL" -concurrency 500 -duration 60s -users 1000 -rampup 10s "${TARGET_ARGS[@]}"
             ;;
         heavy)
-            run_benchmark "http://localhost:8080" -concurrency 2000 -duration 120s -users 5000 -rampup 30s "$@"
+            run_benchmark "$TARGET_URL" -concurrency 2000 -duration 120s -users 5000 -rampup 30s "${TARGET_ARGS[@]}"
             ;;
         custom)
             # 自定义模式，直接传递参数
-            run_benchmark "http://localhost:8080" "$@"
+            run_benchmark "$TARGET_URL" "${TARGET_ARGS[@]}"
             ;;
         *)
             print_error "未知的模式: $mode"

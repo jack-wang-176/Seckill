@@ -19,7 +19,7 @@ import (
 
 func provideConfigs(c *dig.Container) {
 	c.Provide(func() *config.MySQLConfig {
-		return &config.MySQLConfig{DSN: "root:root@tcp(127.0.0.1:3306)/seckill_db?charset=utf8mb4&parseTime=True&loc=Local"}
+		return &config.MySQLConfig{DSN: "root:root@tcp(127.0.0.1:13306)/seckill_db?charset=utf8mb4&parseTime=True&loc=Local"}
 	})
 	c.Provide(func() *config.RedisConfig {
 		return &config.RedisConfig{Addr: "127.0.0.1:6379", Password: "", DB: 0}
@@ -37,7 +37,9 @@ func buildContainer() *dig.Container {
 
 	c.Provide(logger.InitLogger)
 	c.Provide(database.InitMYSQL)
+	c.Provide(user.NewUserMysql)
 	c.Provide(database.InitRedis)
+	c.Provide(database.NewRedisWrapper)
 	c.Provide(mq.InitRabbitMQ)
 
 	c.Provide(user.NewUserServiceImpl)

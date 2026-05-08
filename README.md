@@ -1,16 +1,10 @@
 # 秒杀系统 - 完整微服务实现
 
-一个基于 Go 语言的完整秒杀系统实现，包含微服务架构、数据库设计、缓存管理、以及专业的压测工具。
+一个基于 Go 语言的完整秒杀系统实现，包含微服务架构、数据库设计、缓存管理。
 
-**项目特色**：
-- ✅ 完整的微服务架构（API Gateway + 4 个独立服务）
-- ✅ 实时秒杀流程实现（库存管理、路径验证、异步处理）
-- ✅ 高性能缓存系统（Redis + 生产者-消费者模式）
-- ✅ 原生 Go Goroutine 压测工具
-- ✅ 企业级依赖注入框架集成
-- ✅ 完善的文档和快速启动指南
 
-## 📊 项目概览
+
+##  项目概览
 
 ### 架构设计
 
@@ -20,7 +14,7 @@
 └────────────────────────┬────────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────────┐
-│              API Gateway (Port 8080)                        │
+│              API Gateway (Port 8081)                        │
 │         - 请求路由                                          │
 │         - 认证 (JWT)                                        │
 │         - 用户上下文管理                                    │
@@ -48,24 +42,24 @@
 
 | 模块 | 描述 | 端口 | 技术栈 |
 |------|------|------|-------|
-| **API Gateway** | HTTP 入口层，请求路由和认证 | 8080 | Hertz + JWT |
+| **API Gateway** | HTTP 入口层，请求路由和认证 | 8081 | Hertz + JWT |
 | **User Service** | 用户管理（注册、登录、认证） | 8888 | Kitex RPC + BCrypt |
 | **Product Service** | 商品管理（列表、详情、创建） | 8889 | Kitex RPC + MySQL |
 | **Order Service** | 秒杀流程（路径生成、库存、结果） | 8890 | Kitex RPC + Redis |
 | **Infrastructure** | 缓存、数据库、消息队列 | - | Redis + MySQL + RabbitMQ |
 
-## 🚀 快速开始
+##  快速开始
 
 ### 前置要求
 
 - Go 1.18+
 - Docker & Docker Compose
 - 8GB+ 内存
-- 空闲端口：8080, 8888, 8889, 8890, 3306, 6379
+- 空闲端口：8081, 8888, 8889, 8890, 3306, 6379
 
 ### 3 步启动
 
-#### 1️⃣ 启动基础设施
+####  启动基础设施
 
 ```bash
 # 启动 Docker 容器（MySQL、Redis、RabbitMQ）
@@ -75,7 +69,7 @@ docker-compose -f config/docker-compose.yml up -d
 docker-compose -f config/docker-compose.yml ps
 ```
 
-#### 2️⃣ 启动微服务
+####  启动微服务
 
 ```bash
 # 编译所有服务
@@ -88,17 +82,17 @@ make run-product
 make run-user
 ```
 
-#### 3️⃣ 运行压测
+####  运行压测
 
 ```bash
-# 轻量级压测（推荐新手）
+# 轻量级压测
 ./script/run-benchmark.sh light
 
 # 或使用 Makefile
 make benchmark-light
 ```
 
-## 📁 项目结构
+##  项目结构
 
 ```
 .
@@ -133,12 +127,12 @@ make benchmark-light
 │   │   └── seckill_benchmark    # 可执行文件
 │   └── README.md                 # 详细文档
 │
-├── docs/                         # 📚 文档
+├── docs/                         #  文档
 │   ├── QUICK_START.md            # 快速参考（2 分钟）
 │   ├── STRESS_TEST.md            # 压测指南（10 分钟）
 │   └── IMPLEMENTATION_SUMMARY.md # 实现总结（15 分钟）
 │
-├── config/                       # ⚙️ 配置
+├── config/                       #  配置
 │   ├── docker-compose.yml        # 容器编排
 │   └── kitex_info.yaml           # Kitex 配置
 │
@@ -153,7 +147,7 @@ make benchmark-light
 └── README.md                     # 本文件
 ```
 
-## 🔑 核心功能
+##  核心功能
 
 ### 1. 用户系统
 
@@ -216,7 +210,7 @@ GET /api/v1/seckill/result?product_id=1 (需要认证)
 # 返回: { "success": true, "message": "秒杀成功" }
 ```
 
-## 📊 压测工具
+##  压测工具
 
 ### 快速启动
 
@@ -259,7 +253,7 @@ QPS：150 请求/秒
 ========================================
 ```
 
-## 🛠️ 构建命令
+##  构建命令
 
 ### 编译
 
@@ -300,7 +294,7 @@ make tidy
 make help
 ```
 
-## 🔐 认证机制
+##  认证机制
 
 系统使用 JWT (JSON Web Token) 进行身份验证。
 
@@ -314,18 +308,18 @@ make help
 
 ```bash
 # 获取令牌
-TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/user/login \
+TOKEN=$(curl -s -X POST http://localhost:8081/api/v1/user/login \
   -H "Content-Type: application/json" \
   -d '{"username":"user123","password":"password123"}' \
   | jq -r '.token')
 
 # 使用令牌
 curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8080/api/v1/seckill/path \
+  http://localhost:8081/api/v1/seckill/path \
   -d '{"product_id":"1"}'
 ```
 
-## 📈 性能优化特性
+##  性能优化特性
 
 ### 1. 缓存策略
 
@@ -344,13 +338,13 @@ curl -H "Authorization: Bearer $TOKEN" \
 - **RabbitMQ 队列**：异步处理订单
 - **非阻塞 I/O**：快速响应客户端
 
-## 🐛 故障排除
+##  故障排除
 
 ### 问题 1：服务无法启动
 
 ```bash
 # 检查端口是否被占用
-lsof -i :8080
+lsof -i :8081
 lsof -i :8888
 
 # 检查 Docker 容器状态
@@ -370,7 +364,7 @@ redis-cli -h 127.0.0.1 -p 6379 ping
 mysql -h 127.0.0.1 -u root -p
 
 # 检查网络
-curl http://localhost:8080/api/v1/product/list
+curl http://localhost:8081/api/v1/product/list
 ```
 
 ### 问题 3：秒杀失败
@@ -380,39 +374,15 @@ curl http://localhost:8080/api/v1/product/list
 docker-compose -f config/docker-compose.yml logs -f order-service
 
 # 验证商品是否存在
-curl http://localhost:8080/api/v1/product/list
+curl http://localhost:8081/api/v1/product/list
 
 # 验证秒杀时间窗口
 # 确保 start_time <= now <= end_time
 ```
 
-## 📚 详细文档
 
-| 文档 | 描述 | 阅读时间 |
-|------|------|--------|
-| [QUICK_START.md](docs/QUICK_START.md) | 压测工具快速参考 | 2 分钟 |
-| [STRESS_TEST.md](docs/STRESS_TEST.md) | 完整压测指南 | 10 分钟 |
-| [IMPLEMENTATION_SUMMARY.md](docs/IMPLEMENTATION_SUMMARY.md) | 实现细节说明 | 15 分钟 |
-| [test/load/README.md](test/load/README.md) | 压测工具详细文档 | 20 分钟 |
 
-## 🎯 学习路径
-
-### 初级（了解系统）
-1. 阅读本 README（5 分钟）
-2. 查看项目结构（2 分钟）
-3. 启动系统并验证（5 分钟）
-
-### 中级（使用系统）
-1. 阅读 [QUICK_START.md](docs/QUICK_START.md)（2 分钟）
-2. 运行压测工具（10 分钟）
-3. 理解性能指标（5 分钟）
-
-### 高级（理解实现）
-1. 阅读 [IMPLEMENTATION_SUMMARY.md](docs/IMPLEMENTATION_SUMMARY.md)（15 分钟）
-2. 查看源代码（30 分钟）
-3. 运行完整压力测试（30 分钟）
-
-## 🔗 相关技术栈
+##  相关技术栈
 
 ### 后端框架
 - **Hertz** - 高性能 HTTP 框架（API Gateway）
@@ -433,102 +403,4 @@ curl http://localhost:8080/api/v1/product/list
 - **Docker & Docker Compose** - 容器化部署
 - **Go 1.18+** - 编程语言
 
-## 💡 最佳实践
 
-### 1. 开发流程
-
-```bash
-# 编辑代码后
-go build ./...          # 检查编译
-go test ./...           # 运行测试
-make benchmark-light    # 验证性能
-```
-
-### 2. 测试流程
-
-```bash
-# 本地开发测试
-./script/run-benchmark.sh light
-
-# 完整功能测试
-./script/run-benchmark.sh medium
-
-# 压力测试（发布前）
-./script/run-benchmark.sh heavy
-```
-
-### 3. 部署检查
-
-```bash
-# 验证所有服务启动
-docker-compose -f config/docker-compose.yml ps
-
-# 运行完整测试
-make benchmark-heavy
-
-# 检查日志无错误
-docker-compose -f config/docker-compose.yml logs
-```
-
-## 🤝 贡献指南
-
-欢迎提交 Issue 或 Pull Request！
-
-### 开发规范
-
-- 代码遵循 Go 官方规范
-- 提交前运行 `go fmt` 格式化
-- 添加必要的注释和文档
-- 包含合理的错误处理
-
-
-
-## 📞 支持
-
-### 快速问题
-
-1. **查看文档**：[docs/](docs/) 目录
-2. **压测问题**：[docs/QUICK_START.md](docs/QUICK_START.md)
-3. **实现问题**：[docs/IMPLEMENTATION_SUMMARY.md](docs/IMPLEMENTATION_SUMMARY.md)
-
-### 常见问题
-
-**Q: 如何修改并发数？**
-```bash
-./script/run-benchmark.sh custom -concurrency 1000 -duration 60s
-```
-
-**Q: 如何连接到远程服务？**
-```bash
-./script/run-benchmark.sh light -url http://api.example.com:8080
-```
-
-**Q: 如何长时间运行压测？**
-```bash
-./script/run-benchmark.sh custom -duration 3600s -users 5000
-```
-
-## 🎉 快速命令参考
-
-```bash
-# 启动
-docker-compose -f config/docker-compose.yml up -d
-make run-api & make run-order & make run-product & make run-user
-
-# 测试
-./script/run-benchmark.sh light
-make benchmark-medium
-make benchmark-heavy
-
-# 停止
-docker-compose -f config/docker-compose.yml down
-
-# 清理
-make clean-benchmark
-```
-
----
-
-**开发者**：秦志豪 (Qin Zhihao)  
-**最后更新**：2026-05-08  
-**版本**：1.0.0

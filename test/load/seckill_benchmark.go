@@ -100,20 +100,32 @@ func (w *TestWorker) doRequest(method, url string, body interface{}, headers map
 	return respBody, latency, nil
 }
 
-// SeckillPathResp 获取秒杀路径响应
+// SeckillPathResp 获取秒杀路径响应（适配统一响应格式）
 type SeckillPathResp struct {
-	Path string `json:"path"`
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data struct {
+		Path string `json:"path"`
+	} `json:"data"`
 }
 
-// OrderResp 下单响应
+// OrderResp 下单响应（适配统一响应格式）
 type OrderResp struct {
-	Message string `json:"message"`
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data struct {
+		Message string `json:"message"`
+	} `json:"data"`
 }
 
-// ResultResp 结果响应
+// ResultResp 结果响应（适配统一响应格式）
 type ResultResp struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	} `json:"data"`
 }
 
 // Run 运行压测
@@ -150,10 +162,10 @@ func (w *TestWorker) Run() {
 		json.Unmarshal(pathBody, &pathResp)
 		w.metrics.RecordLatency(&w.metrics.PathLatencies, pathLatency)
 
-		// 步骤2: 提交订单
+		// 步骤2: 提交订单 (注意这里改成了 pathResp.Data.Path)
 		orderBody, orderLatency, err := w.doRequest(
 			"POST",
-			w.config.TargetURL+"/api/v1/seckill/order/"+pathResp.Path,
+			w.config.TargetURL+"/api/v1/seckill/order/"+pathResp.Data.Path,
 			map[string]string{"product_id": w.config.ProductID},
 			headers,
 		)
@@ -183,7 +195,8 @@ func (w *TestWorker) Run() {
 					json.Unmarshal(resultBody, &resultResp)
 					w.metrics.RecordLatency(&w.metrics.ResultLatencies, resultLatency)
 
-					if resultResp.Success {
+					// 兼容：通过 Code=200 或者是 Data 内部的 Success 判断
+					if resultResp.Code == 200 || resultResp.Data.Success {
 						atomic.AddInt64(&w.metrics.SuccessRequests, 1)
 						break
 					}
@@ -214,33 +227,67 @@ func GenerateUserTokens(targetURL string, count int) ([]string, error) {
 		req, _ := http.NewRequest("POST", targetURL+"/api/v1/user/register", bytes.NewReader(data))
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := client.Do(req)
-		if err != nil || resp.StatusCode != http.StatusOK {
-			io.ReadAll(resp.Body)
-			resp.Body.Close()
-			// 用户可能已存在，继续尝试登录
+		if err != nil {
+			log.Printf("注册请求失败 user_%d: %v", i, err)
 		} else {
-			resp.Body.Close()
+			if resp != nil {
+				if resp.StatusCode != http.StatusOK {
+					io.ReadAll(resp.Body)
+				}
+				resp.Body.Close()
+			}
 		}
 
-		// 登录获取令牌
+		// 登录获取令牌（POST JSON）
 		loginBody := map[string]string{"username": username, "password": password}
-		data, _ = json.Marshal(loginBody)
-		req, _ = http.NewRequest("POST", targetURL+"/api/v1/user/login", bytes.NewReader(data))
-		req.Header.Set("Content-Type", "application/json")
-		resp, err = client.Do(req)
-		if err != nil || resp.StatusCode != http.StatusOK {
-			log.Printf("登录失败 user_%d", i)
-			continue
+		maxAttempts := 3
+		gotToken := false
+		for attempt := 0; attempt < maxAttempts; attempt++ {
+			data, _ := json.Marshal(loginBody)
+			req, _ = http.NewRequest("POST", targetURL+"/api/v1/user/login", bytes.NewReader(data))
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err = client.Do(req)
+			if err != nil {
+				log.Printf("登录请求失败 user_%d attempt=%d: %v", i, attempt+1, err)
+			} else {
+				if resp != nil {
+					bodyBytes, _ := io.ReadAll(resp.Body)
+					resp.Body.Close()
+
+					if resp.StatusCode != http.StatusOK {
+						log.Printf("登录失败 user_%d attempt=%d: status=%d body=%s", i, attempt+1, resp.StatusCode, string(bodyBytes))
+					} else {
+						// 适配统一响应格式 {"code":200, "msg":"success", "data":{"token":"xxx"}}
+						var loginResp struct {
+							Data struct {
+								Token string `json:"token"`
+							} `json:"data"`
+						}
+						if err := json.Unmarshal(bodyBytes, &loginResp); err != nil {
+							log.Printf("解析登录响应失败 user_%d: %v", i, err)
+						} else if loginResp.Data.Token != "" {
+							tokens = append(tokens, loginResp.Data.Token)
+							gotToken = true
+							break
+						} else {
+							log.Printf("登录响应无 token user_%d attempt=%d (body=%s)", i, attempt+1, string(bodyBytes))
+						}
+					}
+				} else {
+					log.Printf("登录返回 nil resp user_%d attempt=%d", i, attempt+1)
+				}
+			}
+
+			// 指数退避
+			if attempt < maxAttempts-1 {
+				backoff := time.Duration(100*(1<<attempt)) * time.Millisecond
+				time.Sleep(backoff)
+			}
 		}
 
-		var loginResp struct {
-			Token string `json:"token"`
-		}
-		json.NewDecoder(resp.Body).Decode(&loginResp)
-		resp.Body.Close()
-
-		if loginResp.Token != "" {
-			tokens = append(tokens, loginResp.Token)
+		if !gotToken {
+			log.Printf("登录失败（重试后） user_%d，跳过此用户", i)
 		}
 
 		if i%50 == 0 {
@@ -249,6 +296,10 @@ func GenerateUserTokens(targetURL string, count int) ([]string, error) {
 	}
 
 	fmt.Printf("共生成 %d 个有效用户令牌\n", len(tokens))
+	if len(tokens) == 0 {
+		return nil, fmt.Errorf("未生成任何令牌，请检查目标地址或后端服务是否可用: %s", targetURL)
+	}
+
 	return tokens, nil
 }
 
@@ -333,7 +384,7 @@ func calculateAverage(data []int64) int64 {
 
 func main() {
 	config := &Config{}
-	flag.StringVar(&config.TargetURL, "url", "http://localhost:8080", "API Gateway地址")
+	flag.StringVar(&config.TargetURL, "url", "http://localhost:8081", "API Gateway地址")
 	flag.IntVar(&config.Concurrency, "concurrency", 100, "并发数")
 	flag.DurationVar(&config.Duration, "duration", 30*time.Second, "压测持续时间")
 	flag.StringVar(&config.ProductID, "product", "1", "商品ID")

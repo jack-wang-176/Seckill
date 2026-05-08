@@ -224,7 +224,7 @@ return data[index]
 
 | 参数 | 范围 | 默认值 | 用途 |
 |------|------|--------|------|
-| `-url` | URL | localhost:8080 | 目标地址 |
+| `-url` | URL | localhost:8081 | 目标地址 |
 | `-concurrency` | 1-10000+ | 100 | 并发数 |
 | `-duration` | 1s-1h+ | 30s | 压测时间 |
 | `-product` | 1+ | 1 | 商品ID |

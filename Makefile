@@ -3,16 +3,16 @@
 
 # 微服务构建和运行
 build-api:
-	go build -o bin/api-server backend/cmd/api/main.go
+	go build -o bin/api-server cmd/api/main.go
 
 build-order:
-	go build -o bin/order-server backend/cmd/order/main.go
+	go build -o bin/order-server cmd/order/main.go
 
 build-product:
-	go build -o bin/product-server backend/cmd/product/main.go
+	go build -o bin/product-server cmd/product/main.go
 
 build-user:
-	go build -o bin/user-server backend/cmd/user/main.go
+	go build -o bin/user-server cmd/user/main.go
 
 run-api: build-api
 	./bin/api-server
