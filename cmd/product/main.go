@@ -40,6 +40,7 @@ func buildContainer() *dig.Container {
 	c.Provide(logger.InitLogger)
 	c.Provide(database.InitMYSQL)
 	c.Provide(database.InitRedis)
+	c.Provide(database.NewRedisWrapper)
 	c.Provide(mq.InitRabbitMQ)
 
 	c.Provide(product.NewProductServiceImpl)

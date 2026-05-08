@@ -37,7 +37,7 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	resp.BaseResp = &base.BaseResp{}
 
 	//添加校验path
-	isValid, err := s.RedisWrapper.ConfirmPaht(req.Path, fmt.Sprintf("seckill:path:%d:%d", req.UserId, req.ProductId))
+	isValid, err := s.RedisWrapper.ConfirmPaht(ctx, req.Path, fmt.Sprintf("seckill:path:%d:%d", req.UserId, req.ProductId))
 	if err != nil {
 		s.Logger.Error("Redis confirm path error", zap.Error(err))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to confirm path")
@@ -53,7 +53,7 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	//这里和预热中保持一致
 	stockKey := fmt.Sprintf("seckill:stock:%d", req.ProductId)
 
-	result := s.RedisWrapper.SimpleDecrStock([]string{stockKey, soldOutKey})
+	result := s.RedisWrapper.SimpleDecrStock(ctx, []string{stockKey, soldOutKey})
 	if result == -1 {
 		s.Logger.Warn("Stock sold out", zap.Int64("ProductID", req.ProductId))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "sell out")
@@ -104,11 +104,11 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 func (s *orderServiceImpl) SeckillPath(ctx context.Context, req *order.GetSeckillPathReq) (resp *order.GetSeckillPathResp, err error) {
 	resp = new(order.GetSeckillPathResp)
 	resp.BaseResp = &base.BaseResp{}
-	salt := fmt.Sprintf("May@)@#)(*&^%%$#@!%s", time.Now().String())
+	salt := fmt.Sprintf("May@)@#)(*&^$#@!%s", time.Now().String())
 	path := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%d:%d:%s", req.UserId, req.ProductId, salt))))
 	//交给前端。生成对应路径，存入redis，后续校验路径和之前生成的是否一致
 	key := fmt.Sprintf("seckill:path:%d:%d", req.UserId, req.ProductId)
-	err = s.RedisWrapper.SetPath(key, path)
+	err = s.RedisWrapper.SetPath(ctx, key, path)
 	if err != nil {
 		s.Logger.Error("Redis Set Path error", zap.Error(err))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to set path")
@@ -122,7 +122,7 @@ func (s *orderServiceImpl) SeckillPath(ctx context.Context, req *order.GetSeckil
 func (s *orderServiceImpl) GetSeckillResult_(ctx context.Context, req *order.GetSeckillResultReq) (resp *order.GetSeckillResultResp, err error) {
 	resp = new(order.GetSeckillResultResp)
 	resp.BaseResp = &base.BaseResp{}
-	isValid, err := s.RedisWrapper.GetSeckillCre(uint(req.ProductId), uint(req.UserId))
+	isValid, err := s.RedisWrapper.GetSeckillCre(ctx, uint(req.ProductId), uint(req.UserId))
 	if err != nil {
 		s.Logger.Error("Redis get seckill result error", zap.Error(err))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to get seckill result")

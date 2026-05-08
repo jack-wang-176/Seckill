@@ -1,23 +1,29 @@
 package product
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/mq"
+	"time"
 
 	"go.uber.org/zap"
 )
 
 type productConsumer struct {
-	MR     ProductDatabase
-	MQ     *mq.RabbitClient
-	Logger *zap.Logger
+	MR          ProductDatabase
+	MQ          *mq.RabbitClient
+	RedisWorker *database.RedisWrapper
+	Logger      *zap.Logger
 }
 
-func NewProductConsumer(mr ProductDatabase, mq *mq.RabbitClient, log *zap.Logger) ProductConsumer {
+func NewProductConsumer(mr ProductDatabase, mq *mq.RabbitClient, rw *database.RedisWrapper, log *zap.Logger) ProductConsumer {
 	return &productConsumer{
-		MR:     mr,
-		MQ:     mq,
-		Logger: log,
+		MR:          mr,
+		MQ:          mq,
+		RedisWorker: rw,
+		Logger:      log,
 	}
 }
 func (p *productConsumer) StartConsumer() {
@@ -40,14 +46,21 @@ func (p *productConsumer) StartListConsumer() {
 				continue
 			}
 
-			_, err := p.MR.GetProductList(msg)
-
+			products, err := p.MR.GetProductList(msg)
 			if err != nil {
 				p.Logger.Error("Failed to get product list", zap.Error(err))
 				d.Nack(false, true)
-			} else {
-				d.Ack(false)
+				continue
 			}
+
+			// 缓存结果到 Redis，供 API 层读取
+			key := "product:list"
+			b, err := json.Marshal(products)
+			if err == nil {
+				_ = p.RedisWorker.Client.Set(context.Background(), key, b, 60*5*time.Second).Err()
+			}
+
+			d.Ack(false)
 		}
 	}()
 }
@@ -67,14 +80,20 @@ func (p *productConsumer) StartSingleConsumer() {
 				continue
 			}
 
-			_, err := p.MR.GetProduct(msg)
-
+			prod, err := p.MR.GetProduct(msg)
 			if err != nil {
 				p.Logger.Error("Failed to get product", zap.Error(err))
 				d.Nack(false, true)
-			} else {
-				d.Ack(false)
+				continue
 			}
+
+			key := fmt.Sprintf("product:%d", msg.ProductID)
+			b, err := json.Marshal(prod)
+			if err == nil {
+				_ = p.RedisWorker.Client.Set(context.Background(), key, b, 60*5*time.Second).Err()
+			}
+
+			d.Ack(false)
 		}
 	}()
 }

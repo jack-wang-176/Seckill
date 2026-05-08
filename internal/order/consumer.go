@@ -1,6 +1,7 @@
 package order
 
 import (
+	"context"
 	"encoding/json"
 	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/mq"
@@ -54,7 +55,7 @@ func (o *orderConsumer) StartConsumer() {
 			} else {
 				d.Ack(false)
 				//调用redis
-				err := o.RedisWrapper.SendSeckillCre(uint(msg.ProductID), uint(msg.UserID))
+				err := o.RedisWrapper.SendSeckillCre(context.Background(), uint(msg.ProductID), uint(msg.UserID))
 				if err != nil {
 					o.logger.Error("Redis send seckill result error", zap.String("order_no", msg.OrderNo), zap.Error(err))
 				}
