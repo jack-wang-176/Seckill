@@ -18,4 +18,6 @@ type ProductServiceImpl interface {
 }
 type ProductConsumer interface {
 	StartConsumer()
+	StartListConsumer()
+	StartSingleConsumer()
 }

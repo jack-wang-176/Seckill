@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/kitex_gen/base"
 	"full_backend_practice/kitex_gen/user"
-	"full_backend_practice/pkg/database"
 
 	"full_backend_practice/infrastructure/mq"
 	"full_backend_practice/pkg/response"

@@ -2,10 +2,14 @@ package product
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/mq"
 	product "full_backend_practice/kitex_gen/product"
+	"full_backend_practice/pkg/response"
 
+	"github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
 
@@ -28,18 +32,115 @@ func NewProductServiceImpl(mr ProductDatabase, rw *database.RedisWrapper, mq *mq
 
 // GetProductList implements the ProductServiceImpl interface.
 func (s *productServiceImpl) GetProductList(ctx context.Context, req *product.GetProductListReq) (resp *product.GetProductListResp, err error) {
-	// TODO: Your code here...
+	resp = new(product.GetProductListResp)
+	body, err := json.Marshal(req)
+	if err != nil {
+		s.Logger.Error("Failed to marshal GetProductListReq", zap.Error(err))
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "json marshal error")
+		return resp, err
+	}
+	err = s.MQ.Channel.PublishWithContext(ctx, "", "product_list", false, false, amqp091.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: amqp091.Persistent,
+		Body:         body,
+	})
+
+	if err != nil {
+		s.Logger.Error("RabbitMQ publish error", zap.Error(err))
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to get product list")
+		return resp, nil
+	}
+
+	msg := mq.ProductMessage{}
+	products, err := s.MySqlWrapper.GetProductList(msg)
+	if err != nil {
+		s.Logger.Error("Failed to load product list", zap.Error(err))
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to get product list")
+		return resp, nil
+	}
+
+	resp.Products = make([]*product.ProductInfo, 0, len(products))
+	for _, p := range products {
+		resp.Products = append(resp.Products, &product.ProductInfo{
+			Id:           int64(p.ID),
+			Name:         p.Name,
+			Price:        p.Price,
+			SeckillPrict: p.SeckillPrice,
+			Stock:        int32(p.Stock),
+			Version:      int32(p.Version),
+			StartTime:    fmt.Sprintf("%d", p.StartTime),
+			EndTime:      fmt.Sprintf("%d", p.EndTime),
+		})
+	}
+	resp.BaseResp = response.BuildBaseResp(response.CodeOK, "success")
 	return
 }
 
 // GetProduct implements the ProductServiceImpl interface.
 func (s *productServiceImpl) GetProduct(ctx context.Context, req *product.GetProductReq) (resp *product.GetProductResp, err error) {
-	// TODO: Your code here...
+	resp = new(product.GetProductResp)
+	body, err := json.Marshal(req)
+	if err != nil {
+		s.Logger.Error("Failed to marshal GetProductReq", zap.Error(err))
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "json marshal error")
+		return resp, err
+	}
+	err = s.MQ.Channel.PublishWithContext(ctx, "", "product_single", false, false, amqp091.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: amqp091.Persistent,
+		Body:         body,
+	})
+
+	if err != nil {
+		s.Logger.Error("RabbitMQ publish error", zap.Error(err))
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to get product")
+		return resp, nil
+	}
+
+	msg := mq.ProductMessage{
+		ProductID: uint64(req.ProductId),
+	}
+	p, err := s.MySqlWrapper.GetProduct(msg)
+	if err != nil {
+		s.Logger.Error("Failed to load product", zap.Error(err))
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to get product")
+		return resp, nil
+	}
+
+	resp.Product = &product.ProductInfo{
+		Id:           int64(p.ID),
+		Name:         p.Name,
+		Price:        p.Price,
+		SeckillPrict: p.SeckillPrice,
+		Stock:        int32(p.Stock),
+		Version:      int32(p.Version),
+		StartTime:    fmt.Sprintf("%d", p.StartTime),
+		EndTime:      fmt.Sprintf("%d", p.EndTime),
+	}
+	resp.BaseResp = response.BuildBaseResp(response.CodeOK, "success")
 	return
 }
 
 // HeatProduct implements the ProductServiceImpl interface.
 func (s *productServiceImpl) HeatProduct(ctx context.Context, req *product.HeatProductReq) (resp *product.HeatProductResp, err error) {
-	// TODO: Your code here...
+	resp = new(product.HeatProductResp)
+	s.Logger.Info("begin to heat product")
+	msg := mq.ProductMessage{}
+	products, err := s.MySqlWrapper.GetProductList(msg)
+	if err != nil {
+		s.Logger.Error("Failed to load products for preheat", zap.Error(err))
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to heat product")
+		return resp, nil
+	}
+
+	for _, p := range products {
+		if err := s.RedisWrapper.PreHeatStock(uint(p.ID), p.Stock); err != nil {
+			s.Logger.Error("Failed to pre heat stock", zap.Uint("product_id", p.ID), zap.Error(err))
+			resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to heat product")
+			return resp, nil
+		}
+	}
+
+	resp.BaseResp = response.BuildBaseResp(response.CodeOK, "success")
 	return
 }

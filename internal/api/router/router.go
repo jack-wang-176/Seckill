@@ -17,6 +17,8 @@ func Register(h *server.Hertz, userH *handler.UserHandler, orderH *handler.Order
 	}
 	seckillGroup := v1.Group("/seckill", middleware.AuthMiddleWare())
 	{
-		seckillGroup.POST("/order", orderH.CreateOrder)
+		seckillGroup.POST("/path", orderH.OrderPath)
+		seckillGroup.POST("/result", orderH.OrderResult)
+		seckillGroup.POST("/order/:path", orderH.CreateOrder)
 	}
 }

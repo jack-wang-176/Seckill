@@ -28,5 +28,14 @@ type Product struct {
 	EndTime      int64   `gorm:"type:bigint;not null"`
 }
 
-func (p *productDBWrapper) GetProductList(msg mq.ProductMessage) ([]Product, error) {}
-func (p *productDBWrapper) GetProduct(msg mq.ProductMessage) (Product, error)       {}
+func (p *productDBWrapper) GetProductList(msg mq.ProductMessage) ([]Product, error) {
+	var products []Product
+	err := p.DB.Find(&products).Error
+	return products, err
+}
+
+func (p *productDBWrapper) GetProduct(msg mq.ProductMessage) (Product, error) {
+	var product Product
+	err := p.DB.Where("id = ?", msg.ProductID).First(&product).Error
+	return product, err
+}

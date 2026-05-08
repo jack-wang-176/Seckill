@@ -104,7 +104,7 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 func (s *orderServiceImpl) SeckillPath(ctx context.Context, req *order.GetSeckillPathReq) (resp *order.GetSeckillPathResp, err error) {
 	resp = new(order.GetSeckillPathResp)
 	resp.BaseResp = &base.BaseResp{}
-	salt := fmt.Sprintf("May@)@#)(*&^%$#@!%s", time.Now().String())
+	salt := fmt.Sprintf("May@)@#)(*&^%%$#@!%s", time.Now().String())
 	path := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%d:%d:%s", req.UserId, req.ProductId, salt))))
 	//交给前端。生成对应路径，存入redis，后续校验路径和之前生成的是否一致
 	key := fmt.Sprintf("seckill:path:%d:%d", req.UserId, req.ProductId)
