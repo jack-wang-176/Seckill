@@ -1,406 +1,177 @@
-# 秒杀系统 - 完整微服务实现
+# 秒杀系统 - 微服务实现
 
-一个基于 Go 语言的完整秒杀系统实现，包含微服务架构、数据库设计、缓存管理。
+基于 Go + CloudWeGo (Hertz/Kitex) 的秒杀系统，采用微服务架构 + Redis 原子库存 + RabbitMQ 异步下单，支撑高并发秒杀场景。
 
+---
 
-
-##  项目概览
-
-### 架构设计
+## 架构概览
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                   Client (Web/Mobile)                       │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-┌────────────────────────▼────────────────────────────────────┐
-│              API Gateway (Port 8081)                        │
-│         - 请求路由                                          │
-│         - 认证 (JWT)                                        │
-│         - 用户上下文管理                                    │
-└──────┬──────────┬──────────────┬───────────────────────────┘
-       │          │              │
-┌──────▼───┐ ┌───▼──────┐ ┌─────▼──────┐ ┌──────────┐
-│   User   │ │ Product  │ │   Order    │ │  Redis  │
-│ Service  │ │ Service  │ │  Service   │ │ (Cache) │
-│ (Port    │ │ (Port    │ │ (Port      │ │ (Port   │
-│ 8889)    │ │ 8890)    │ │ 8891)      │ │ 6379)   │
-└──────────┘ └──────────┘ └────────────┘ └────────┬─┘
-       │          │              │          │
-       └──────────┴──────────────┴──────────┘
-              (Kitex RPC)
-       │
-┌──────▼────────────────────────────┐
-│      MySQL (Port 3306)            │
-│  - 用户表                         │
-│  - 商品表                         │
-│  - 订单表                         │
-└───────────────────────────────────┘
+用户 → API Gateway (Hertz, 8081)
+        ├── /api/v1/user/*    → User Service (Kitex RPC, 8889)
+        ├── /api/v1/product/* → Product Service (Kitex RPC, 8890)
+        └── /api/v1/seckill/* → Order Service (Kitex RPC, 8891)
+                                 ├── Redis (库存原子扣减 / 动态路径防刷)
+                                 └── RabbitMQ (异步下单) → MySQL
 ```
 
-### 核心模块
+## 秒杀业务流程
 
-| 模块 | 描述 | 端口 | 技术栈 |
-|------|------|------|-------|
-| **API Gateway** | HTTP 入口层，请求路由和认证 | 8081 | Hertz + JWT |
-| **User Service** | 用户管理（注册、登录、认证） | 8888 | Kitex RPC + BCrypt |
-| **Product Service** | 商品管理（列表、详情、创建） | 8889 | Kitex RPC + MySQL |
-| **Order Service** | 秒杀流程（路径生成、库存、结果） | 8890 | Kitex RPC + Redis |
-| **Infrastructure** | 缓存、数据库、消息队列 | - | Redis + MySQL + RabbitMQ |
+```
+┌────────────────────────────────────────────┐
+│  Step 1: 获取秒杀路径                       │
+│  POST /api/v1/seckill/path                 │
+│  需 Authorization: Bearer <token>           │
+│  基于 userId + productId + 盐值生成MD5      │
+│  存入Redis，用于后续校验，防止直接下单       │
+│  返回: {"path":"a1b2c3d4..."}              │
+└───────────────────┬────────────────────────┘
+                    │
+┌───────────────────▼────────────────────────┐
+│  Step 2: 提交秒杀订单                       │
+│  POST /api/v1/seckill/order/:path          │
+│  流程:                                      │
+│  ① 校验路径 → Redis GET 对比是否一致        │
+│  ② 扣库存 → Redis Lua 脚本原子扣减          │
+│  ③ 发消息 → RabbitMQ 异步推送订单           │
+│  ④ 消费者落库 → MySQL 事务更新库存+创建订单 │
+│  ⑤ 标记结果 → Redis SET 用户秒杀成功状态    │
+│  返回: {"message":"seckill success"}        │
+└───────────────────┬────────────────────────┘
+                    │
+┌───────────────────▼────────────────────────┐
+│  Step 3: 查询秒杀结果                       │
+│  POST /api/v1/seckill/result               │
+│  轮询 Redis 查看秒杀是否成功                │
+└────────────────────────────────────────────┘
+```
 
-##  快速开始
+### 秒杀核心设计
 
-### 前置要求
+| 设计 | 目的 |
+|------|------|
+| **动态路径** | 每次请求生成 MD5 路径，无法提前或直接下单 |
+| **Redis Lua 原子扣减** | 保证高并发下库存不超卖 |
+| **RabbitMQ 异步落库** | 秒杀接口只操作 Redis，订单异步写入 MySQL |
+| **结果标记** | Redis 记录用户抢购结果，支持轮询查询 |
 
-- Go 1.18+
-- Docker & Docker Compose
-- 8GB+ 内存
-- 空闲端口：8081, 8888, 8889, 8890, 3306, 6379
+---
 
-### 3 步启动
-
-####  启动基础设施
+## 快速启动
 
 ```bash
-# 启动 Docker 容器（MySQL、Redis、RabbitMQ）
-docker-compose -f config/docker-compose.yml up -d
+# 1. 启动基础设施 (MySQL, Redis, RabbitMQ, Etcd)
+docker compose -f config/docker-compose.yml up -d
 
-# 验证服务状态
-docker-compose -f config/docker-compose.yml ps
-```
+# 2. 启动微服务 (4个终端分别执行)
+make run-user      # 用户服务 (8889)
+make run-product   # 商品服务 (8890)
+make run-order     # 订单服务 (8891)
+make run-api       # API Gateway (8081)
 
-####  启动微服务
+# 3. 创建商品并预热缓存
+curl -X POST http://localhost:8081/api/v1/product/create \
+  -H "Content-Type: application/json" \
+  -d '{"name":"秒杀商品","price":99.99,"seckill_prict":49.99,"stock":1000,"version":1,"start_time":1746662400,"end_time":1746835199}'
+curl -X POST http://localhost:8081/api/v1/product/heat
 
-```bash
-# 编译所有服务
-make build-api && make build-order && make build-product && make build-user
-
-# 或者在不同终端分别运行
-make run-api
-make run-order
-make run-product
-make run-user
-```
-
-####  运行压测
-
-```bash
-# 轻量级压测
+# 4. 运行压测
 ./script/run-benchmark.sh light
-
-# 或使用 Makefile
-make benchmark-light
 ```
 
-##  项目结构
+---
 
-```
-.
-├── backend/                      # 微服务核心代码
-│   ├── cmd/                      # 服务入口
-│   │   ├── api/main.go           # API Gateway
-│   │   ├── order/main.go         # Order Service
-│   │   ├── product/main.go       # Product Service
-│   │   └── user/main.go          # User Service
-│   ├── internal/                 # 内部实现
-│   │   ├── api/                  # Gateway 实现
-│   │   │   ├── handler/          # HTTP 处理器
-│   │   │   ├── middleware/       # 中间件（认证）
-│   │   │   └── router/           # 路由配置
-│   │   ├── order/                # Order 实现
-│   │   ├── product/              # Product 实现
-│   │   ├── user/                 # User 实现
-│   │   └── rpc/                  # RPC 客户端
-│   ├── idl/                      # Thrift IDL 定义
-│   │   ├── base.thrift
-│   │   ├── order.thrift
-│   │   ├── product.thrift
-│   │   └── user.thrift
-│   └── pkg/                      # 共享包
-│       ├── database/             # 数据库驱动
-│       ├── mq/                   # 消息队列
-│       └── ...
-│
-├── test/load/                    # 压测工具
-│   ├── seckill_benchmark.go     # 压测源代码
-│   ├── bin/                      # 编译输出
-│   │   └── seckill_benchmark    # 可执行文件
-│   └── README.md                 # 详细文档
-│
-├── docs/                         #  文档
-│   ├── QUICK_START.md            # 快速参考（2 分钟）
-│   ├── STRESS_TEST.md            # 压测指南（10 分钟）
-│   └── IMPLEMENTATION_SUMMARY.md # 实现总结（15 分钟）
-│
-├── config/                       #  配置
-│   ├── docker-compose.yml        # 容器编排
-│   └── kitex_info.yaml           # Kitex 配置
-│
-├── script/                       # 脚本
-│   ├── bootstrap.sh              # 服务启动脚本
-│   └── run-benchmark.sh          # 压测启动脚本
-│
-├── Makefile                      # 构建工具
-├── go.mod                        # 依赖管理
-├── go.sum                        # 依赖校验
-├── .gitignore                    # Git 忽略
-└── README.md                     # 本文件
-```
+## 压测结果
 
-##  核心功能
-
-### 1. 用户系统
-
-```bash
-# 注册用户
-POST /api/v1/user/register
-{
-  "username": "user123",
-  "password": "password123"
-}
-
-# 登录获取令牌
-POST /api/v1/user/login
-{
-  "username": "user123",
-  "password": "password123"
-}
-# 返回: { "token": "eyJhbGc..." }
-```
-
-### 2. 商品管理
-
-```bash
-# 查询商品列表
-GET /api/v1/product/list
-
-# 获取商品详情
-GET /api/v1/product/:id
-
-# 创建商品
-POST /api/v1/product/create
-{
-  "name": "商品名称",
-  "price": 99.99,
-  "stock": 1000,
-  "start_time": "2026-05-08T10:00:00Z",
-  "end_time": "2026-05-08T11:00:00Z"
-}
-```
-
-### 3. 秒杀流程
-
-```bash
-# 步骤1: 获取秒杀路径
-POST /api/v1/seckill/path (需要认证)
-{
-  "product_id": "1"
-}
-# 返回: { "path": "a1b2c3d4e5f6..." }
-
-# 步骤2: 提交订单
-POST /api/v1/seckill/order/:path (需要认证)
-{
-  "product_id": "1"
-}
-# 返回: { "message": "success" }
-
-# 步骤3: 查询秒杀结果
-GET /api/v1/seckill/result?product_id=1 (需要认证)
-# 返回: { "success": true, "message": "秒杀成功" }
-```
-
-##  压测工具
-
-### 快速启动
-
-```bash
-# 查看帮助
-./script/run-benchmark.sh help
-
-# 轻量级（50 并发，20 秒）
-./script/run-benchmark.sh light
-
-# 中等（500 并发，60 秒）
-./script/run-benchmark.sh medium
-
-# 重负载（2000 并发，120 秒）
-./script/run-benchmark.sh heavy
-```
-
-### 性能指标
-
-压测工具会输出详细的性能报告：
+### 环境
+- MacBook Air (Apple Silicon) · light 模式 (50 并发, 20 秒, 200 用户)
 
 ```
 ========================================
                   秒杀压测报告
 ========================================
-
-总时长：30.0 秒
-总请求数：4500
-成功请求：4350
-失败请求：150
-成功率：96.67%
-QPS：150 请求/秒
-
+总时长：20.0 秒
+总请求数：177,610
+成功请求：177,610
+失败请求：0
+成功率：100.00%
+QPS：8,879 请求/秒
 --- 秒杀路径延迟 ---
-平均: 45 ms | P50: 42 ms | P90: 68 ms | P99: 95 ms
-
+平均: 1 ms | P50: 2 ms | P90: 2 ms | P99: 4 ms
 --- 下单延迟 ---
-平均: 52 ms | P50: 48 ms | P90: 78 ms | P99: 120 ms
-
+平均: 4 ms | P50: 4 ms | P90: 5 ms | P99: 8 ms
 ========================================
 ```
 
-##  构建命令
-
-### 编译
+### 更多压测模式
 
 ```bash
-# 编译所有服务
-make build-api build-order make build-product make build-user
-
-# 编译压测工具
-make build-benchmark
-
-# 清理编译文件
-make clean-benchmark
+./script/run-benchmark.sh medium         # 500并发 60秒 1000用户
+./script/run-benchmark.sh heavy          # 2000并发 120秒 5000用户
+./script/run-benchmark.sh custom \
+  -concurrency 100 -duration 30s -users 500   # 自定义参数
 ```
 
-### 运行
+---
+
+## 项目结构
+
+```
+├── cmd/              # 服务入口 (api/user/product/order)
+├── internal/         # 核心实现
+│   ├── api/          # Gateway: handler / middleware / router
+│   ├── user/         # 用户: 注册登录 / JWT 签发
+│   ├── product/      # 商品: CRUD / 缓存预热 / RabbitMQ 更新
+│   ├── order/        # 秒杀: 路径生成 / 库存扣减 / 异步消费
+│   └── rpc/          # Kitex RPC 客户端 (Etcd 服务发现)
+├── infrastructure/   # 基础设施: MySQL / Redis / RabbitMQ / Logger
+├── pkg/              # 共享: 响应封装 / JWT 工具
+├── kitex_gen/        # Thrift 自动生成代码
+├── idl/              # Thrift IDL 定义
+├── test/load/        # 压测工具 (Go 实现)
+├── config/           # Docker Compose
+└── script/           # 启动脚本
+```
+
+## API 参考
+
+### 用户 (无需认证)
 
 ```bash
-# 启动单个服务
-make run-api       # API Gateway
-make run-order     # Order Service
-make run-product   # Product Service
-make run-user      # User Service
-
-# 运行压测
-make benchmark             # 默认配置
-make benchmark-light       # 轻量级
-make benchmark-medium      # 中等
-make benchmark-heavy       # 重负载
+POST /api/v1/user/register  {"username":"...","password":"..."}
+POST /api/v1/user/login     {"username":"...","password":"..."}
 ```
 
-### 其他命令
+### 商品 (无需认证)
 
 ```bash
-# 依赖管理
-make tidy
-
-# 查看所有可用命令
-make help
+GET  /api/v1/product/list                            # 商品列表
+GET  /api/v1/product/:id                             # 商品详情
+POST /api/v1/product/create  {"name":"...","price":99,"stock":1000,...}
+POST /api/v1/product/heat                            # 预热缓存到 Redis
 ```
 
-##  认证机制
-
-系统使用 JWT (JSON Web Token) 进行身份验证。
-
-### 认证流程
-
-1. **注册/登录** → 获取 JWT 令牌
-2. **使用令牌** → 在请求头中添加 `Authorization: Bearer <token>`
-3. **验证** → 中间件验证令牌的有效性和用户身份
-
-### 示例
+### 秒杀 (需 Authorization: Bearer <token>)
 
 ```bash
-# 获取令牌
-TOKEN=$(curl -s -X POST http://localhost:8081/api/v1/user/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"user123","password":"password123"}' \
-  | jq -r '.token')
-
-# 使用令牌
-curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8081/api/v1/seckill/path \
-  -d '{"product_id":"1"}'
+POST /api/v1/seckill/path         {"product_id":"1"}       # 获取路径
+POST /api/v1/seckill/order/:path  {"product_id":"1"}       # 提交订单
+POST /api/v1/seckill/result       {"product_id":"1"}       # 查询结果
 ```
 
-##  性能优化特性
+---
 
-### 1. 缓存策略
+## 技术栈
 
-- **Redis 缓存**：存储商品信息和秒杀路径
-- **生产者-消费者**：异步更新缓存
-- **TTL 管理**：自动过期清理
-
-### 2. 并发控制
-
-- **库存原子性**：使用 Redis 原子操作
-- **路径验证**：防止直接下单绕过
-- **用户令牌**：防止重复秒杀
-
-### 3. 异步处理
-
-- **RabbitMQ 队列**：异步处理订单
-- **非阻塞 I/O**：快速响应客户端
-
-##  故障排除
-
-### 问题 1：服务无法启动
-
-```bash
-# 检查端口是否被占用
-lsof -i :8081
-lsof -i :8888
-
-# 检查 Docker 容器状态
-docker-compose -f config/docker-compose.yml ps
-
-# 查看容器日志
-docker-compose -f config/docker-compose.yml logs -f mysql
-```
-
-### 问题 2：连接超时
-
-```bash
-# 检查 Redis 连接
-redis-cli -h 127.0.0.1 -p 6379 ping
-
-# 检查 MySQL 连接
-mysql -h 127.0.0.1 -u root -p
-
-# 检查网络
-curl http://localhost:8081/api/v1/product/list
-```
-
-### 问题 3：秒杀失败
-
-```bash
-# 查看服务日志
-docker-compose -f config/docker-compose.yml logs -f order-service
-
-# 验证商品是否存在
-curl http://localhost:8081/api/v1/product/list
-
-# 验证秒杀时间窗口
-# 确保 start_time <= now <= end_time
-```
-
-
-
-##  相关技术栈
-
-### 后端框架
-- **Hertz** - 高性能 HTTP 框架（API Gateway）
-- **Kitex** - 高性能 RPC 框架（微服务通信）
-- **Thrift** - IDL 定义和序列化
-
-### 存储层
-- **MySQL** - 关系数据库（持久化存储）
-- **Redis** - 内存缓存（性能优化）
-- **RabbitMQ** - 消息队列（异步处理）
-
-### 工具库
-- **go.uber.org/dig** - 依赖注入
-- **go.uber.org/zap** - 结构化日志
-- **golang-jwt/jwt** - JWT 认证
-
-### 开发工具
-- **Docker & Docker Compose** - 容器化部署
-- **Go 1.18+** - 编程语言
+| 类别 | 技术 |
+|------|------|
+| 框架 | Hertz (HTTP), Kitex (RPC) |
+| 序列化 | Thrift |
+| 存储 | MySQL (GORM), Redis |
+| 消息 | RabbitMQ |
+| 注册中心 | Etcd |
+| 认证 | JWT |
+| 依赖注入 | dig |
+| 日志 | zap |
 
 
