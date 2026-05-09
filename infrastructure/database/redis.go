@@ -93,3 +93,6 @@ func (rw *RedisWrapper) GetSeckillCre(ctx context.Context, productID, userID uin
 	}
 	return res == "success_create_order", nil
 }
+func (rw *RedisWrapper) SetOrderSuccess(ctx context.Context, key string) error {
+	return rw.Client.Set(ctx, key, "", time.Hour*24).Err()
+}

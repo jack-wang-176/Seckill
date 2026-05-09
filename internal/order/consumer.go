@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/mq"
+	"time"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -53,9 +54,22 @@ func (o *orderConsumer) StartConsumer() {
 					d.Nack(false, true)
 				}
 			} else {
+				//调用sql查询product时间。
+				endTime, err := o.mysql.GetProductEndTime(uint(msg.ProductID))
+				if err != nil {
+					o.logger.Error("Failed to detect product end time", zap.String("order_no", msg.OrderNo), zap.Error(err))
+					d.Nack(false, true)
+					continue
+				}
+				if endTime < time.Now().Unix() {
+					o.logger.Warn("Product already ended", zap.String("order_no", msg.OrderNo), zap.Int64("end_time", endTime))
+					d.Ack(false)
+					continue
+				}
+
 				d.Ack(false)
 				//调用redis
-				err := o.RedisWrapper.SendSeckillCre(context.Background(), uint(msg.ProductID), uint(msg.UserID))
+				err = o.RedisWrapper.SendSeckillCre(context.Background(), uint(msg.ProductID), uint(msg.UserID))
 				if err != nil {
 					o.logger.Error("Redis send seckill result error", zap.String("order_no", msg.OrderNo), zap.Error(err))
 				}

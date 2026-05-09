@@ -52,8 +52,10 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	soldOutKey := fmt.Sprintf("seckill:stock:%dsoldout", req.ProductId)
 	//这里和预热中保持一致
 	stockKey := fmt.Sprintf("seckill:stock:%d", req.ProductId)
+	//seckill:order_create:%d:%d
+	successKey := fmt.Sprintf("seckill:order_create:%d:%d", req.UserId, req.ProductId)
 
-	result := s.RedisWrapper.SimpleDecrStock(ctx, []string{stockKey, soldOutKey})
+	result := s.RedisWrapper.SimpleDecrStock(ctx, []string{stockKey, soldOutKey, successKey})
 	if result == -1 {
 		s.Logger.Warn("Stock sold out", zap.Int64("ProductID", req.ProductId))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "sell out")
@@ -65,6 +67,10 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	} else if result == -3 {
 		s.Logger.Error("Stock not find", zap.Int64("ProductID", req.ProductId))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to seckill order")
+		return resp, nil
+	} else if result == -4 {
+		s.Logger.Warn("already have order", zap.Int64("UserID", req.UserId), zap.Int64("ProductID", req.ProductId))
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "already have order")
 		return resp, nil
 	}
 	orderNod := fmt.Sprintf("SN%d%d", time.Now().UnixNano(), req.UserId)

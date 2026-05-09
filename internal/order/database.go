@@ -16,8 +16,9 @@ type Order struct {
 }
 
 type Product struct {
-	ID    uint
-	Stock int
+	ID      uint
+	Stock   int
+	EndTime int64
 }
 
 func (Product) TableName() string {
@@ -51,4 +52,12 @@ func (m *orderDBWrapper) SeckillOrder(msg mq.SeckillMessage) error {
 		}).Error
 	})
 
+}
+func (m *orderDBWrapper) GetProductEndTime(productID uint) (int64, error) {
+	var product Product
+	err := m.DB.Model(&Product{}).Where("id = ?", productID).First(&product).Error
+	if err != nil {
+		return 0, err
+	}
+	return product.EndTime, nil
 }

@@ -18,4 +18,5 @@ type OrderConsumer interface {
 
 type OrderDatabase interface {
 	SeckillOrder(msg mq.SeckillMessage) error
+	GetProductEndTime(productID uint) (int64, error)
 }
