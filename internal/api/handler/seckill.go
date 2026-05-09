@@ -74,7 +74,10 @@ func (h *OrderHandler) CreateOrder(c context.Context, ctx *app.RequestContext) {
 		return
 	}
 
-	response.Success(ctx, utils.H{"message": "seckill success"})
+	response.Success(ctx, utils.H{
+		"message":  "seckill success",
+		"order_no": resp.OrderNo,
+	})
 }
 func (h *OrderHandler) OrderPath(c context.Context, ctx *app.RequestContext) {
 	userIDVal, exist := ctx.Get("user_id")
@@ -136,4 +139,7 @@ func (h *OrderHandler) OrderResult(c context.Context, ctx *app.RequestContext) {
 		return
 	}
 
+	response.Success(ctx, utils.H{
+		"order_no": resp.OrderNo,
+	})
 }

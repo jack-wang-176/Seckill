@@ -17,7 +17,7 @@ var (
 	decrStockScript *redis.Script
 )
 
-//go:embd scripts/decr_stock.lua
+//go:embed scripts/decr_stock.lua
 var decrStockLua string
 
 func init() {
@@ -80,18 +80,14 @@ func (rw *RedisWrapper) ConfirmPaht(ctx context.Context, path, key string) (bool
 }
 
 // 这里临时的设置set的持续时间段，后续应该维护一个添加对应product的开始时间和结束时间，并根据当下的时间来动态设置对应字段的持续时间
-func (rw *RedisWrapper) SendSeckillCre(ctx context.Context, productID, userID uint) error {
+func (rw *RedisWrapper) SendSeckillCre(ctx context.Context, productID, userID uint, orderNo string) error {
 	key := fmt.Sprintf("seckill:order_create:%d:%d", productID, userID)
-	return rw.Client.Set(ctx, key, "success_create_order", time.Hour*24).Err()
+	return rw.Client.Set(ctx, key, orderNo, time.Hour*24).Err()
 }
 
-func (rw *RedisWrapper) GetSeckillCre(ctx context.Context, productID, userID uint) (bool, error) {
+func (rw *RedisWrapper) GetSeckillCre(ctx context.Context, productID, userID uint) (string, error) {
 	key := fmt.Sprintf("seckill:order_create:%d:%d", productID, userID)
-	res, err := rw.Client.Get(ctx, key).Result()
-	if err != nil {
-		return false, err
-	}
-	return res == "success_create_order", nil
+	return rw.Client.Get(ctx, key).Result()
 }
 func (rw *RedisWrapper) SetOrderSuccess(ctx context.Context, key string) error {
 	return rw.Client.Set(ctx, key, "", time.Hour*24).Err()

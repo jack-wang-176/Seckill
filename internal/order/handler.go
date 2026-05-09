@@ -52,8 +52,8 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	soldOutKey := fmt.Sprintf("seckill:stock:%dsoldout", req.ProductId)
 	//这里和预热中保持一致
 	stockKey := fmt.Sprintf("seckill:stock:%d", req.ProductId)
-	//seckill:order_create:%d:%d
-	successKey := fmt.Sprintf("seckill:order_create:%d:%d", req.UserId, req.ProductId)
+	// seckill:order_create:%d:%d 格式：productID:userID（与 RedisWrapper.SendSeckillCre 保持一致）
+	successKey := fmt.Sprintf("seckill:order_create:%d:%d", req.ProductId, req.UserId)
 
 	result := s.RedisWrapper.SimpleDecrStock(ctx, []string{stockKey, soldOutKey, successKey})
 	if result == -1 {
@@ -65,8 +65,8 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to seckill order")
 		return resp, nil
 	} else if result == -3 {
-		s.Logger.Error("Stock not find", zap.Int64("ProductID", req.ProductId))
-		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to seckill order")
+		s.Logger.Error("Stock anomaly (<=0 without soldout flag)", zap.Int64("ProductID", req.ProductId))
+		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "stock anomaly")
 		return resp, nil
 	} else if result == -4 {
 		s.Logger.Warn("already have order", zap.Int64("UserID", req.UserId), zap.Int64("ProductID", req.ProductId))
@@ -104,6 +104,7 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 
 	s.Logger.Info("Order pushed to MQ successfully", zap.String("order_no", orderNod))
 
+	resp.OrderNo = orderNod
 	resp.BaseResp = response.BuildBaseResp(response.CodeOK, "seckill success")
 	return resp, nil
 }
@@ -128,16 +129,17 @@ func (s *orderServiceImpl) GetSeckillPath(ctx context.Context, req *order.GetSec
 func (s *orderServiceImpl) GetSeckillResult_(ctx context.Context, req *order.GetSeckillResultReq) (resp *order.GetSeckillResultResp, err error) {
 	resp = new(order.GetSeckillResultResp)
 	resp.BaseResp = &base.BaseResp{}
-	isValid, err := s.RedisWrapper.GetSeckillCre(ctx, uint(req.ProductId), uint(req.UserId))
+	orderNo, err := s.RedisWrapper.GetSeckillCre(ctx, uint(req.ProductId), uint(req.UserId))
 	if err != nil {
 		s.Logger.Error("Redis get seckill result error", zap.Error(err))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to get seckill result")
 		return resp, nil
 	}
-	if !isValid {
+	if orderNo == "" {
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "invalid seckill result")
 		return resp, nil
 	}
+	resp.OrderNo = orderNo
 	resp.BaseResp = response.BuildBaseResp(response.CodeOK, "success")
 	return resp, nil
 }

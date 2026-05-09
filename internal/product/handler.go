@@ -159,6 +159,7 @@ func (s *productServiceImpl) CreateProduct(ctx context.Context, req *product.Cre
 		return resp, nil
 	}
 
+	//这里还是设计的问题，这两个路由应该穿起来调用
 	if s.RedisWrapper != nil {
 		_, _ = s.RedisWrapper.Client.Del(ctx, "product:list", fmt.Sprintf("product:%d", prod.ID)).Result()
 	}

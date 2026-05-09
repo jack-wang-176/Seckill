@@ -582,6 +582,20 @@ func (p *SeckillResp) FastRead(buf []byte) (int, error) {
 					goto SkipFieldError
 				}
 			}
+		case 2:
+			if fieldTypeId == thrift.STRING {
+				l, err = p.FastReadField2(buf[offset:])
+				offset += l
+				if err != nil {
+					goto ReadFieldError
+				}
+			} else {
+				l, err = thrift.Binary.Skip(buf[offset:], fieldTypeId)
+				offset += l
+				if err != nil {
+					goto SkipFieldError
+				}
+			}
 		default:
 			l, err = thrift.Binary.Skip(buf[offset:], fieldTypeId)
 			offset += l
@@ -618,6 +632,17 @@ func (p *SeckillResp) FastReadField1(buf []byte) (int, error) {
 	return offset, nil
 }
 
+func (p *SeckillResp) FastReadField2(buf []byte) (int, error) {
+	offset := 0
+	v, l, err := thrift.Binary.ReadString(buf[offset:])
+	offset += l
+	if err != nil {
+		return offset, err
+	}
+	p.OrderNo = v
+	return offset, nil
+}
+
 func (p *SeckillResp) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
@@ -626,6 +651,7 @@ func (p *SeckillResp) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField1(buf[offset:], w)
+		offset += p.fastWriteField2(buf[offset:], w)
 	}
 	offset += thrift.Binary.WriteFieldStop(buf[offset:])
 	return offset
@@ -635,6 +661,7 @@ func (p *SeckillResp) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field1Length()
+		l += p.field2Length()
 	}
 	l += thrift.Binary.FieldStopLength()
 	return l
@@ -651,6 +678,24 @@ func (p *SeckillResp) field1Length() int {
 	l := 0
 	l += thrift.Binary.FieldBeginLength()
 	l += p.BaseResp.BLength()
+	return l
+}
+
+func (p *SeckillResp) fastWriteField2(buf []byte, w thrift.NocopyWriter) int {
+	offset := 0
+	if p.OrderNo != "" {
+		offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRING, 2)
+		offset += thrift.Binary.WriteStringNocopy(buf[offset:], w, p.OrderNo)
+	}
+	return offset
+}
+
+func (p *SeckillResp) field2Length() int {
+	l := 0
+	if p.OrderNo != "" {
+		l += thrift.Binary.FieldBeginLength()
+		l += thrift.Binary.StringLengthNocopy(p.OrderNo)
+	}
 	return l
 }
 

@@ -142,6 +142,7 @@ var fieldIDToName_SeckillReq = map[int16]string{
 
 type SeckillResp struct {
 	BaseResp *base.BaseResp `thrift:"base_resp,1,required" frugal:"1,required,base.BaseResp" json:"base_resp"`
+	OrderNo  string         `thrift:"order_no,2" frugal:"2,default,string" json:"order_no"`
 }
 
 func NewSeckillResp() *SeckillResp {
@@ -159,8 +160,15 @@ func (p *SeckillResp) GetBaseResp() (v *base.BaseResp) {
 	}
 	return p.BaseResp
 }
+
+func (p *SeckillResp) GetOrderNo() (v string) {
+	return p.OrderNo
+}
 func (p *SeckillResp) SetBaseResp(val *base.BaseResp) {
 	p.BaseResp = val
+}
+func (p *SeckillResp) SetOrderNo(val string) {
+	p.OrderNo = val
 }
 
 func (p *SeckillResp) IsSetBaseResp() bool {
@@ -176,6 +184,7 @@ func (p *SeckillResp) String() string {
 
 var fieldIDToName_SeckillResp = map[int16]string{
 	1: "base_resp",
+	2: "order_no",
 }
 
 type GetSeckillResultReq struct {

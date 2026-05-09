@@ -20,6 +20,7 @@ struct SeckillReq{
 }
 struct SeckillResp{
     1: required base.BaseResp base_resp
+    2: string order_no
 }
 struct GetSeckillResultReq{
     1: required i64 user_id
