@@ -55,7 +55,11 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	// seckill:order_create:%d:%d 格式：productID:userID（与 RedisWrapper.SendSeckillCre 保持一致）
 	successKey := fmt.Sprintf("seckill:order_create:%d:%d", req.ProductId, req.UserId)
 
-	result := s.RedisWrapper.SimpleDecrStock(ctx, []string{stockKey, soldOutKey, successKey})
+	// 先生成 orderNo，然后传给 Lua 脚本进行 Redis 预占位
+	// 这样 GetSeckillResult_ 可以立即从 Redis 读到同一个 orderNo，无需等待 consumer
+	orderNod := fmt.Sprintf("SN%d%d", time.Now().UnixNano(), req.UserId)
+
+	result := s.RedisWrapper.SimpleDecrStock(ctx, []string{stockKey, soldOutKey, successKey}, orderNod)
 	if result == -1 {
 		s.Logger.Warn("Stock sold out", zap.Int64("ProductID", req.ProductId))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "sell out")
@@ -73,10 +77,6 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "already have order")
 		return resp, nil
 	}
-	orderNod := fmt.Sprintf("SN%d%d", time.Now().UnixNano(), req.UserId)
-	//这里orderNO能不能继续用，在目前的代码中我好像直接忽略了这一点
-	//从设计上有必要，其他路由需要对这个字段进行对接，目前在order里面可能只去用getseckillresult去对接
-	//其他微服务在req的时候就要考虑这一点
 	msgStuct := mq.SeckillMessage{
 		UserID:    uint64(req.UserId),
 		ProductID: uint64(req.ProductId),
@@ -98,6 +98,8 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	if err != nil {
 		s.Logger.Error("RabbitMQ publish error", zap.Error(err))
 		_ = s.RedisWrapper.Client.Incr(ctx, fmt.Sprintf("seckill:stock:%d", req.ProductId))
+		// MQ 发布失败，删除预占位的 orderKey，让用户可重试
+		_ = s.RedisWrapper.Client.Del(ctx, successKey)
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to seckill order")
 		return resp, nil
 	}

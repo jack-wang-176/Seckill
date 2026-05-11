@@ -62,8 +62,8 @@ func (rw *RedisWrapper) PreHeatStock(ctx context.Context, productID uint, stock 
 	return nil
 }
 
-func (rw *RedisWrapper) SimpleDecrStock(ctx context.Context, stockFirst []string) int {
-	result, _ := rw.Client.Eval(ctx, decrStockLua, stockFirst).Int()
+func (rw *RedisWrapper) SimpleDecrStock(ctx context.Context, stockFirst []string, args ...string) int {
+	result, _ := rw.Client.Eval(ctx, decrStockLua, stockFirst, args).Int()
 	return result
 }
 

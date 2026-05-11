@@ -126,8 +126,15 @@ check_service() {
     local retry=0
 
     while [ $retry -lt $max_retries ]; do
-        if curl -fsS "$url/api/v1/product/list" > /dev/null 2>&1; then
-            print_success "服务已启动: $url"
+        local http_code
+        http_code=$(curl -s -o /dev/null -w "%{http_code}" "$url/api/v1/product/list" 2>/dev/null)
+        
+        if [ "$http_code" != "000" ]; then
+            if [ "$http_code" = "200" ]; then
+                print_success "服务已启动: $url"
+            else
+                print_warning "服务已响应 (HTTP $http_code): $url"
+            fi
             return 0
         fi
         retry=$((retry + 1))
@@ -251,21 +258,33 @@ auto_start_services() {
         fi
     fi
 
-    # 启动本地微服务（如果未运行）
+    # 重启微服务（先杀旧进程，确保重新注册到 etcd）
     print_info "检查本地微服务状态..."
 
-    if ! port_is_listening 8889; then
-        print_info "启动用户服务..."
-        (cd "$PROJECT_ROOT" && nohup make run-user > "$PROJECT_ROOT/test/load/bin/run-user.log" 2>&1 &)
-    fi
-    if ! port_is_listening 8890; then
-        print_info "启动商品服务..."
-        (cd "$PROJECT_ROOT" && nohup make run-product > "$PROJECT_ROOT/test/load/bin/run-product.log" 2>&1 &)
-    fi
-    if ! port_is_listening 8891; then
-        print_info "启动订单服务..."
-        (cd "$PROJECT_ROOT" && nohup make run-order > "$PROJECT_ROOT/test/load/bin/run-order.log" 2>&1 &)
-    fi
+    # 先停掉可能旧的微服务进程，确保重新注册到 etcd
+    for port_and_name in "8889:用户服务" "8890:商品服务" "8891:订单服务"; do
+        local port="${port_and_name%%:*}"
+        local name="${port_and_name##*:}"
+        if port_is_listening "$port"; then
+            print_info "重启 $name (端口 $port)..."
+            local pid
+            pid=$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null)
+            if [ -n "$pid" ]; then
+                kill "$pid" 2>/dev/null || true
+                sleep 1
+            fi
+        fi
+    done
+
+    # 启动用户服务
+    print_info "启动用户服务..."
+    (cd "$PROJECT_ROOT" && nohup make run-user > "$PROJECT_ROOT/test/load/bin/run-user.log" 2>&1 &)
+    # 启动商品服务
+    print_info "启动商品服务..."
+    (cd "$PROJECT_ROOT" && nohup make run-product > "$PROJECT_ROOT/test/load/bin/run-product.log" 2>&1 &)
+    # 启动订单服务
+    print_info "启动订单服务..."
+    (cd "$PROJECT_ROOT" && nohup make run-order > "$PROJECT_ROOT/test/load/bin/run-order.log" 2>&1 &)
 
     # 等待 RPC 服务就绪
     wait_for_port 8889 "用户服务" || return 1
@@ -276,10 +295,19 @@ auto_start_services() {
     local gateway_port
     gateway_port=$(extract_port_from_url "$TARGET_URL")
     export API_GATEWAY_PORT="$gateway_port"
-    if ! port_is_listening "$gateway_port"; then
-        print_info "启动 API Gateway..."
-        (cd "$PROJECT_ROOT" && nohup make run-api > "$PROJECT_ROOT/test/load/bin/run-api.log" 2>&1 &)
+
+    # 先停掉旧的 API Gateway
+    if port_is_listening "$gateway_port"; then
+        local apid_pid
+        apid_pid=$(lsof -nP -iTCP:"$gateway_port" -sTCP:LISTEN -t 2>/dev/null)
+        if [ -n "$apid_pid" ]; then
+            kill "$apid_pid" 2>/dev/null || true
+            sleep 2
+        fi
     fi
+
+    print_info "启动 API Gateway..."
+    (cd "$PROJECT_ROOT" && nohup make run-api > "$PROJECT_ROOT/test/load/bin/run-api.log" 2>&1 &)
 
     wait_for_port "$gateway_port" "API Gateway" || return 1
 
