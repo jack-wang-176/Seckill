@@ -2,18 +2,16 @@ package response
 
 import (
 	"full_backend_practice/kitex_gen/base"
+	"full_backend_practice/pkg/constant"
 )
 
+// ai改的 //提取变量的时候留下来这个问题
 const (
-	CodeOK int32 = 200
-	//for product service 3xx
-	//for user service 4xx
-	CodeInvalidParams int32 = 400
-	CodeUnauthorized  int32 = 401
-	//for order service 5xx
-	CodeInternal int32 = 600
-
-	CodeRPCError int32 = 1001
+	CodeOK            = constant.CodeOK
+	CodeInvalidParams = constant.CodeInvalidParams
+	CodeUnauthorized  = constant.CodeUnauthorized
+	CodeInternal      = constant.CodeInternal
+	CodeRPCError      = constant.CodeRPCError
 )
 
 func BuildBaseResp(code int32, msg string) *base.BaseResp {

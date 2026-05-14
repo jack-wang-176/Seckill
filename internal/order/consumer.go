@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/mq"
+	"full_backend_practice/pkg/constant"
 	"time"
 
 	"go.uber.org/zap"
@@ -29,7 +30,7 @@ func NewOrderConsumer(o OrderDatabase, mq *mq.RabbitClient, redisWrapper *databa
 
 func (o *orderConsumer) StartConsumer() {
 	msgs, err := o.mq.Channel.Consume(
-		"order_seckill", "", false, false, false, false, nil)
+		constant.QueueOrderSeckill, "", false, false, false, false, nil)
 	if err != nil {
 		o.logger.Fatal("MQ consume error", zap.Error(err))
 	}

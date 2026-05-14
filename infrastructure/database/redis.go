@@ -4,9 +4,9 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"time"
 
 	"full_backend_practice/pkg/config"
+	"full_backend_practice/pkg/constant"
 
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -54,7 +54,7 @@ func NewRedisWrapper(cli *redis.Client) *RedisWrapper {
 }
 
 func (rw *RedisWrapper) PreHeatStock(ctx context.Context, productID uint, stock int) error {
-	key := fmt.Sprintf("seckill:stock:%d", productID)
+	key := fmt.Sprintf(constant.SeckillStockKeyFormat, productID)
 	err := preHeatScript.Run(ctx, rw.Client, []string{key}, stock).Err()
 	if err != nil {
 		return fmt.Errorf("redis set err: %v", err)
@@ -68,7 +68,7 @@ func (rw *RedisWrapper) SimpleDecrStock(ctx context.Context, stockFirst []string
 }
 
 func (rw *RedisWrapper) SetPath(ctx context.Context, key, value string) error {
-	return rw.Client.Set(ctx, key, value, 60*(time.Second)).Err()
+	return rw.Client.Set(ctx, key, value, constant.SeckillPathTTL).Err()
 }
 
 func (rw *RedisWrapper) ConfirmPaht(ctx context.Context, path, key string) (bool, error) {
@@ -79,16 +79,15 @@ func (rw *RedisWrapper) ConfirmPaht(ctx context.Context, path, key string) (bool
 	return val == path, nil
 }
 
-// 这里临时的设置set的持续时间段，后续应该维护一个添加对应product的开始时间和结束时间，并根据当下的时间来动态设置对应字段的持续时间
 func (rw *RedisWrapper) SendSeckillCre(ctx context.Context, productID, userID uint, orderNo string) error {
-	key := fmt.Sprintf("seckill:order_create:%d:%d", productID, userID)
-	return rw.Client.Set(ctx, key, orderNo, time.Hour*24).Err()
+	key := fmt.Sprintf(constant.SeckillOrderKeyFormat, productID, userID)
+	return rw.Client.Set(ctx, key, orderNo, constant.SeckillOrderConfirmTTL).Err()
 }
 
 func (rw *RedisWrapper) GetSeckillCre(ctx context.Context, productID, userID uint) (string, error) {
-	key := fmt.Sprintf("seckill:order_create:%d:%d", productID, userID)
+	key := fmt.Sprintf(constant.SeckillOrderKeyFormat, productID, userID)
 	return rw.Client.Get(ctx, key).Result()
 }
 func (rw *RedisWrapper) SetOrderSuccess(ctx context.Context, key string) error {
-	return rw.Client.Set(ctx, key, "", time.Hour*24).Err()
+	return rw.Client.Set(ctx, key, "", constant.SeckillOrderConfirmTTL).Err()
 }

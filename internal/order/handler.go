@@ -10,6 +10,7 @@ import (
 	order "full_backend_practice/kitex_gen/order"
 
 	"full_backend_practice/infrastructure/mq"
+	"full_backend_practice/pkg/constant"
 	"full_backend_practice/pkg/response"
 	"time"
 
@@ -37,7 +38,7 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	resp.BaseResp = &base.BaseResp{}
 
 	//添加校验path
-	isValid, err := s.RedisWrapper.ConfirmPaht(ctx, req.Path, fmt.Sprintf("seckill:path:%d:%d", req.UserId, req.ProductId))
+	isValid, err := s.RedisWrapper.ConfirmPaht(ctx, req.Path, fmt.Sprintf(constant.SeckillPathKeyFormat, req.UserId, req.ProductId))
 	if err != nil {
 		s.Logger.Error("Redis confirm path error", zap.Error(err))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to confirm path")
@@ -49,30 +50,29 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 		return resp, nil
 	}
 
-	soldOutKey := fmt.Sprintf("seckill:stock:%dsoldout", req.ProductId)
+	soldOutKey := fmt.Sprintf(constant.SeckillSoldoutKeyFormat, req.ProductId)
 	//这里和预热中保持一致
-	stockKey := fmt.Sprintf("seckill:stock:%d", req.ProductId)
-	// seckill:order_create:%d:%d 格式：productID:userID（与 RedisWrapper.SendSeckillCre 保持一致）
-	successKey := fmt.Sprintf("seckill:order_create:%d:%d", req.ProductId, req.UserId)
+	stockKey := fmt.Sprintf(constant.SeckillStockKeyFormat, req.ProductId)
+	successKey := fmt.Sprintf(constant.SeckillOrderKeyFormat, req.ProductId, req.UserId)
 
 	// 先生成 orderNo，然后传给 Lua 脚本进行 Redis 预占位
 	// 这样 GetSeckillResult_ 可以立即从 Redis 读到同一个 orderNo，无需等待 consumer
-	orderNod := fmt.Sprintf("SN%d%d", time.Now().UnixNano(), req.UserId)
+	orderNod := fmt.Sprintf(constant.OrderNoFormat, time.Now().UnixNano(), req.UserId)
 
 	result := s.RedisWrapper.SimpleDecrStock(ctx, []string{stockKey, soldOutKey, successKey}, orderNod)
-	if result == -1 {
+	if result == constant.SeckillLuaSoldOut {
 		s.Logger.Warn("Stock sold out", zap.Int64("ProductID", req.ProductId))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "sell out")
 		return resp, nil
-	} else if result == -2 {
+	} else if result == constant.SeckillLuaNoStock {
 		s.Logger.Error("Stock Decr inject error,nees further investigation", zap.Int64("ProductID", req.ProductId))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to seckill order")
 		return resp, nil
-	} else if result == -3 {
+	} else if result == constant.SeckillLuaStockAnomaly {
 		s.Logger.Error("Stock anomaly (<=0 without soldout flag)", zap.Int64("ProductID", req.ProductId))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "stock anomaly")
 		return resp, nil
-	} else if result == -4 {
+	} else if result == constant.SeckillLuaAlreadyOrdered {
 		s.Logger.Warn("already have order", zap.Int64("UserID", req.UserId), zap.Int64("ProductID", req.ProductId))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "already have order")
 		return resp, nil
@@ -89,7 +89,7 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 		return resp, nil
 	}
 
-	err = s.MQ.Channel.PublishWithContext(ctx, "", "order_seckill", false, false, amqp091.Publishing{
+	err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueOrderSeckill, false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
 		Body:         body,
@@ -97,7 +97,7 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 
 	if err != nil {
 		s.Logger.Error("RabbitMQ publish error", zap.Error(err))
-		_ = s.RedisWrapper.Client.Incr(ctx, fmt.Sprintf("seckill:stock:%d", req.ProductId))
+		_ = s.RedisWrapper.Client.Incr(ctx, fmt.Sprintf(constant.SeckillStockKeyFormat, req.ProductId))
 		// MQ 发布失败，删除预占位的 orderKey，让用户可重试
 		_ = s.RedisWrapper.Client.Del(ctx, successKey)
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to seckill order")
@@ -116,7 +116,7 @@ func (s *orderServiceImpl) GetSeckillPath(ctx context.Context, req *order.GetSec
 	salt := fmt.Sprintf("May@)@#)(*&^$#@!%s", time.Now().String())
 	path := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%d:%d:%s", req.UserId, req.ProductId, salt))))
 	//交给前端。生成对应路径，存入redis，后续校验路径和之前生成的是否一致
-	key := fmt.Sprintf("seckill:path:%d:%d", req.UserId, req.ProductId)
+	key := fmt.Sprintf(constant.SeckillPathKeyFormat, req.UserId, req.ProductId)
 	err = s.RedisWrapper.SetPath(ctx, key, path)
 	if err != nil {
 		s.Logger.Error("Redis Set Path error", zap.Error(err))

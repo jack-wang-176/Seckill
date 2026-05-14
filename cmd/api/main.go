@@ -1,11 +1,13 @@
 package main
 
 import (
+	"os"
+
 	"full_backend_practice/infrastructure/logger"
 	"full_backend_practice/internal/api/handler"
 	"full_backend_practice/internal/api/router"
 	"full_backend_practice/internal/rpc"
-	"os"
+	"full_backend_practice/pkg/constant"
 
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"go.uber.org/dig"
@@ -34,7 +36,7 @@ func main() {
 	) {
 		port := os.Getenv("API_GATEWAY_PORT")
 		if port == "" {
-			port = "8081"
+			port = constant.DefaultAPIGatewayPort
 		}
 		hostPort := "0.0.0.0:" + port
 		h := server.Default(server.WithHostPorts(hostPort))

@@ -7,6 +7,7 @@ import (
 	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/mq"
 	product "full_backend_practice/kitex_gen/product"
+	"full_backend_practice/pkg/constant"
 	"full_backend_practice/pkg/response"
 
 	"github.com/rabbitmq/amqp091-go"
@@ -34,7 +35,7 @@ func NewProductServiceImpl(mr ProductDatabase, rw *database.RedisWrapper, mq *mq
 func (s *productServiceImpl) GetProductList(ctx context.Context, req *product.GetProductListReq) (resp *product.GetProductListResp, err error) {
 	resp = new(product.GetProductListResp)
 	// 先尝试从 Redis 缓存读取
-	cacheKey := "product:list"
+	cacheKey := constant.ProductListKey
 	if s.RedisWrapper != nil {
 		if val, e := s.RedisWrapper.Client.Get(ctx, cacheKey).Result(); e == nil {
 			var products []Product
@@ -64,7 +65,7 @@ func (s *productServiceImpl) GetProductList(ctx context.Context, req *product.Ge
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "json marshal error")
 		return resp, err
 	}
-	err = s.MQ.Channel.PublishWithContext(ctx, "", "product_list", false, false, amqp091.Publishing{
+	err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueProductList, false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
 		Body:         body,
@@ -85,7 +86,7 @@ func (s *productServiceImpl) GetProductList(ctx context.Context, req *product.Ge
 func (s *productServiceImpl) GetProduct(ctx context.Context, req *product.GetProductReq) (resp *product.GetProductResp, err error) {
 	resp = new(product.GetProductResp)
 	// 先尝试从缓存读取单条
-	cacheKey := fmt.Sprintf("product:%d", req.ProductId)
+	cacheKey := fmt.Sprintf(constant.ProductKeyFormat, req.ProductId)
 	if s.RedisWrapper != nil {
 		if val, e := s.RedisWrapper.Client.Get(ctx, cacheKey).Result(); e == nil {
 			var p Product
@@ -112,7 +113,7 @@ func (s *productServiceImpl) GetProduct(ctx context.Context, req *product.GetPro
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "json marshal error")
 		return resp, err
 	}
-	err = s.MQ.Channel.PublishWithContext(ctx, "", "product_single", false, false, amqp091.Publishing{
+	err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueProductSingle, false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
 		Body:         body,
@@ -161,7 +162,7 @@ func (s *productServiceImpl) CreateProduct(ctx context.Context, req *product.Cre
 
 	//这里还是设计的问题，这两个路由应该穿起来调用
 	if s.RedisWrapper != nil {
-		_, _ = s.RedisWrapper.Client.Del(ctx, "product:list", fmt.Sprintf("product:%d", prod.ID)).Result()
+		_, _ = s.RedisWrapper.Client.Del(ctx, constant.ProductListKey, fmt.Sprintf(constant.ProductKeyFormat, prod.ID)).Result()
 	}
 
 	resp.Product = &product.ProductInfo{

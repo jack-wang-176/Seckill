@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"os"
 
 	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/logger"
@@ -10,6 +11,7 @@ import (
 	"full_backend_practice/kitex_gen/product/productservice"
 
 	"full_backend_practice/pkg/config"
+	"full_backend_practice/pkg/constant"
 
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
@@ -19,18 +21,15 @@ import (
 )
 
 func provideConfigs(c *dig.Container) {
-	c.Provide(func() *config.MySQLConfig {
-		return &config.MySQLConfig{DSN: "root:root@tcp(127.0.0.1:13306)/seckill_db?charset=utf8mb4&parseTime=True&loc=Local"}
-	})
-	c.Provide(func() *config.RedisConfig {
-		return &config.RedisConfig{Addr: "127.0.0.1:6379", Password: "", DB: 0}
-	})
-	c.Provide(func() *config.RabbitMQConfig {
-		return &config.RabbitMQConfig{URL: "amqp://guest:guest@127.0.0.1:5672/", Queues: []string{"product_list", "product_single"}}
-	})
-	c.Provide(func() *config.EtcdConfig {
-		return &config.EtcdConfig{Endpoints: []string{"127.0.0.1:2379"}}
-	})
+	mysqlCfg, redisCfg, mqCfg, etcdCfg := config.LoadConfigFromEnv()
+
+	// 覆盖队列：商品服务关心 product_list 和 product_single
+	mqCfg.Queues = []string{constant.QueueProductList, constant.QueueProductSingle}
+
+	c.Provide(func() *config.MySQLConfig { return &mysqlCfg })
+	c.Provide(func() *config.RedisConfig { return &redisCfg })
+	c.Provide(func() *config.RabbitMQConfig { return &mqCfg })
+	c.Provide(func() *config.EtcdConfig { return &etcdCfg })
 }
 
 func buildContainer() *dig.Container {
@@ -64,13 +63,21 @@ func main() {
 			log.Error("Failed to create etcd registry", zap.Error(err))
 			return err
 		}
-		addr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:8890")
+
+		port := os.Getenv("PRODUCT_RPC_PORT")
+		if port == "" {
+			port = constant.DefaultProductRPCPort
+		}
+		addrStr := "0.0.0.0:" + port
+		addr, _ := net.ResolveTCPAddr("tcp", addrStr)
+
 		svr := productservice.NewServer(
 			impl,
 			server.WithServiceAddr(addr),
 			server.WithRegistry(r),
-			server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "product_service"}),
+			server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: constant.ServiceNameProduct}),
 		)
+		log.Info("Product Service RPC Server is running on " + addrStr)
 		return svr.Run()
 	})
 	if err != nil {

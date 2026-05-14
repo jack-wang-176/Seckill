@@ -5,8 +5,10 @@ services:
     container_name: seckill-mysql
     ports:
       - "13306:3306"
+    env_file:
+      - ../.env
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-root}
       MYSQL_DATABASE: seckill_db 
     command: --default-authentication-plugin=mysql_native_password
     volumes:
@@ -29,9 +31,11 @@ services:
     ports:
       - "5672:5672"   # Go 代码连接 MQ 的通信端口
       - "15672:15672" # 浏览器访问的管理控制台端口
+    env_file:
+      - ../.env
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 

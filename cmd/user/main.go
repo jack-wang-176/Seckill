@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"os"
 
 	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/logger"
@@ -9,6 +10,7 @@ import (
 	"full_backend_practice/internal/user"
 	"full_backend_practice/kitex_gen/user/userservice"
 	"full_backend_practice/pkg/config"
+	"full_backend_practice/pkg/constant"
 
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
@@ -18,19 +20,17 @@ import (
 )
 
 func provideConfigs(c *dig.Container) {
-	c.Provide(func() *config.MySQLConfig {
-		return &config.MySQLConfig{DSN: "root:root@tcp(127.0.0.1:13306)/seckill_db?charset=utf8mb4&parseTime=True&loc=Local"}
-	})
-	c.Provide(func() *config.RedisConfig {
-		return &config.RedisConfig{Addr: "127.0.0.1:6379", Password: "", DB: 0}
-	})
-	c.Provide(func() *config.RabbitMQConfig {
-		return &config.RabbitMQConfig{URL: "amqp://guest:guest@127.0.0.1:5672/", Queues: []string{"order_seckill"}}
-	})
-	c.Provide(func() *config.EtcdConfig {
-		return &config.EtcdConfig{Endpoints: []string{"127.0.0.1:2379"}}
-	})
+	mysqlCfg, redisCfg, mqCfg, etcdCfg := config.LoadConfigFromEnv()
+
+	// 覆盖队列：用户服务关心 order_seckill
+	mqCfg.Queues = []string{constant.QueueOrderSeckill}
+
+	c.Provide(func() *config.MySQLConfig { return &mysqlCfg })
+	c.Provide(func() *config.RedisConfig { return &redisCfg })
+	c.Provide(func() *config.RabbitMQConfig { return &mqCfg })
+	c.Provide(func() *config.EtcdConfig { return &etcdCfg })
 }
+
 func buildContainer() *dig.Container {
 	c := dig.New()
 	provideConfigs(c)
@@ -56,7 +56,7 @@ func main() {
 	) error {
 		log.Info("Starting Application of user service...")
 		consumer.StartRegisterConsumer()
-		log.Info("Order Consumer Started")
+		log.Info("User Consumer Started")
 
 		r, err := etcd.NewEtcdRegistry(etcdCfg.Endpoints)
 		if err != nil {
@@ -64,15 +64,20 @@ func main() {
 			return err
 		}
 
-		addr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:8889")
+		port := os.Getenv("USER_RPC_PORT")
+		if port == "" {
+			port = constant.DefaultUserRPCPort
+		}
+		addrStr := "0.0.0.0:" + port
+		addr, _ := net.ResolveTCPAddr("tcp", addrStr)
 
 		svr := userservice.NewServer(
 			impl,
 			server.WithServiceAddr(addr),
 			server.WithRegistry(r),
-			server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: "user_service"}),
+			server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: constant.ServiceNameUser}),
 		)
-		log.Info("User Service RPC Server is running on 0.0.0.0:8889")
+		log.Info("User Service RPC Server is running on " + addrStr)
 		return svr.Run()
 	})
 	if err != nil {

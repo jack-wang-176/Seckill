@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/mq"
-	"time"
+	"full_backend_practice/pkg/constant"
 
 	"go.uber.org/zap"
 )
@@ -32,7 +32,7 @@ func (p *productConsumer) StartConsumer() {
 }
 
 func (p *productConsumer) StartListConsumer() {
-	msgs, err := p.MQ.Channel.Consume("product_list", "", false, false, false, false, nil)
+	msgs, err := p.MQ.Channel.Consume(constant.QueueProductList, "", false, false, false, false, nil)
 	if err != nil {
 		p.Logger.Fatal("MQ consume error", zap.Error(err))
 	}
@@ -54,10 +54,10 @@ func (p *productConsumer) StartListConsumer() {
 			}
 
 			// 缓存结果到 Redis
-			key := "product:list"
+			key := constant.ProductListKey
 			b, err := json.Marshal(products)
 			if err == nil {
-				_ = p.RedisWorker.Client.Set(context.Background(), key, b, 60*5*time.Second).Err()
+				_ = p.RedisWorker.Client.Set(context.Background(), key, b, constant.ProductCacheTTL).Err()
 			}
 
 			d.Ack(false)
@@ -66,7 +66,7 @@ func (p *productConsumer) StartListConsumer() {
 }
 
 func (p *productConsumer) StartSingleConsumer() {
-	msgs, err := p.MQ.Channel.Consume("product_single", "", false, false, false, false, nil)
+	msgs, err := p.MQ.Channel.Consume(constant.QueueProductSingle, "", false, false, false, false, nil)
 	if err != nil {
 		p.Logger.Fatal("MQ consume error", zap.Error(err))
 	}
@@ -87,10 +87,10 @@ func (p *productConsumer) StartSingleConsumer() {
 				continue
 			}
 
-			key := fmt.Sprintf("product:%d", msg.ProductID)
+			key := fmt.Sprintf(constant.ProductKeyFormat, msg.ProductID)
 			b, err := json.Marshal(prod)
 			if err == nil {
-				_ = p.RedisWorker.Client.Set(context.Background(), key, b, 60*5*time.Second).Err()
+				_ = p.RedisWorker.Client.Set(context.Background(), key, b, constant.ProductCacheTTL).Err()
 			}
 
 			d.Ack(false)
