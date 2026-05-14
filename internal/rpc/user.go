@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"full_backend_practice/kitex_gen/user/userservice"
+	"full_backend_practice/pkg/config"
 
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/loadbalance"
@@ -9,8 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func InitUserRpc(l *zap.Logger) (userservice.Client, error) {
-	r, err := etcd.NewEtcdResolver([]string{"127.0.0.1:2379"})
+func InitUserRpc(cfg *config.EtcdConfig, l *zap.Logger) (userservice.Client, error) {
+	r, err := etcd.NewEtcdResolver(cfg.Endpoints)
 	if err != nil {
 		if l != nil {
 			l.Info("fail to create etcd resolver")

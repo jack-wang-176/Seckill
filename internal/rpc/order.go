@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"full_backend_practice/kitex_gen/order/orderservice"
+	"full_backend_practice/pkg/config"
 
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/loadbalance"
@@ -9,8 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func InitOrderRpc(l *zap.Logger) (orderservice.Client, error) {
-	r, err := etcd.NewEtcdResolver([]string{"127.0.0.1:2379"})
+func InitOrderRpc(cfg *config.EtcdConfig, l *zap.Logger) (orderservice.Client, error) {
+	r, err := etcd.NewEtcdResolver(cfg.Endpoints)
 	if err != nil {
 		if l != nil {
 			l.Error("fail to create etcd resolver", zap.Error(err))

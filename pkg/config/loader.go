@@ -30,14 +30,6 @@ type ServerConfig struct {
 
 var AppConfig AllConfig
 
-// LoadConfigFromEnv 从环境变量加载所有配置 (返回多个值用于兼容旧代码)
-// 支持从 .env 文件读取（通过 godotenv），或直接在系统环境变量中设置
-// 返回值: mysql, redis, rabbitMQ, etcd 配置
-func LoadConfigFromEnv() (mysql MySQLConfig, redis RedisConfig, rabbitMQ RabbitMQConfig, etcd EtcdConfig) {
-	allCfg := LoadAllConfig()
-	return allCfg.MySQL, allCfg.Redis, allCfg.RabbitMQ, allCfg.Etcd
-}
-
 // LoadAllConfig 使用 Viper 从 yaml 文件及环境变量加载所有配置
 // 推荐使用此方法处理所有配置
 func LoadAllConfig() AllConfig {

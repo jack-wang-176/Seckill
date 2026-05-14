@@ -2,7 +2,6 @@ package main
 
 import (
 	"net"
-	"os"
 
 	"full_backend_practice/infrastructure/database"
 	"full_backend_practice/infrastructure/logger"
@@ -19,21 +18,12 @@ import (
 	"go.uber.org/zap"
 )
 
-func provideConfigs(c *dig.Container) {
-	mysqlCfg, redisCfg, mqCfg, etcdCfg := config.LoadConfigFromEnv()
-
-	// 覆盖队列：用户服务关心 order_seckill
-	mqCfg.Queues = []string{constant.QueueOrderSeckill}
-
-	c.Provide(func() *config.MySQLConfig { return &mysqlCfg })
-	c.Provide(func() *config.RedisConfig { return &redisCfg })
-	c.Provide(func() *config.RabbitMQConfig { return &mqCfg })
-	c.Provide(func() *config.EtcdConfig { return &etcdCfg })
-}
-
 func buildContainer() *dig.Container {
 	c := dig.New()
-	provideConfigs(c)
+
+	if err := config.RegisterConfigProviders(c); err != nil {
+		panic(err)
+	}
 
 	c.Provide(logger.InitLogger)
 	c.Provide(database.InitMYSQL)
@@ -51,6 +41,7 @@ func main() {
 	c := buildContainer()
 	err := c.Invoke(func(impl user.UserServiceImpl,
 		consumer user.UserConsumer,
+		serverCfg *config.ServerConfig,
 		etcdCfg *config.EtcdConfig,
 		log *zap.Logger,
 	) error {
@@ -64,9 +55,9 @@ func main() {
 			return err
 		}
 
-		port := os.Getenv("USER_RPC_PORT")
+		port := serverCfg.UserRpcPort
 		if port == "" {
-			port = constant.DefaultUserRPCPort
+			port = "8889"
 		}
 		addrStr := "0.0.0.0:" + port
 		addr, _ := net.ResolveTCPAddr("tcp", addrStr)

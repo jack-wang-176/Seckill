@@ -1,13 +1,11 @@
 package main
 
 import (
-	"os"
-
 	"full_backend_practice/infrastructure/logger"
 	"full_backend_practice/internal/api/handler"
 	"full_backend_practice/internal/api/router"
 	"full_backend_practice/internal/rpc"
-	"full_backend_practice/pkg/constant"
+	"full_backend_practice/pkg/config"
 
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"go.uber.org/dig"
@@ -16,6 +14,10 @@ import (
 
 func buildContainer() *dig.Container {
 	c := dig.New()
+	// 加载所有外部配置并注册到容器
+	if err := config.RegisterConfigProviders(c); err != nil {
+		panic(err)
+	}
 	c.Provide(logger.InitLogger)
 	c.Provide(rpc.InitOrderRpc)
 	c.Provide(rpc.InitUserRpc)
@@ -32,11 +34,12 @@ func main() {
 		userH *handler.UserHandler,
 		orderH *handler.OrderHandler,
 		productH *handler.ProductServiceHandler,
+		cfg *config.ServerConfig,
 		log *zap.Logger,
 	) {
-		port := os.Getenv("API_GATEWAY_PORT")
+		port := cfg.ApiGatewayPort
 		if port == "" {
-			port = constant.DefaultAPIGatewayPort
+			port = "8081" // fallback
 		}
 		hostPort := "0.0.0.0:" + port
 		h := server.Default(server.WithHostPorts(hostPort))
