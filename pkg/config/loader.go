@@ -28,11 +28,10 @@ type ServerConfig struct {
 	OrderRpcPort   string `mapstructure:"order_rpc_port"`
 }
 
-var AppConfig AllConfig
-
 // LoadAllConfig 使用 Viper 从 yaml 文件及环境变量加载所有配置
 // 推荐使用此方法处理所有配置
 func LoadAllConfig() AllConfig {
+	var localconfig AllConfig
 	viper.SetConfigName("config") // 读取 config.yaml
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("./config/")     // 当前工作目录下的 config 目录
@@ -48,9 +47,9 @@ func LoadAllConfig() AllConfig {
 		log.Printf("Warning: Config file not found, will rely on ENV variables or defaults. Error: %v", err)
 	}
 
-	if err := viper.Unmarshal(&AppConfig); err != nil {
+	if err := viper.Unmarshal(&localconfig); err != nil {
 		log.Fatalf("Unable to decode into struct, %v", err)
 	}
 
-	return AppConfig
+	return localconfig
 }
