@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"full_backend_practice/infrastructure/tacer"
+	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 )
 
@@ -36,8 +38,13 @@ func (o *orderConsumer) StartConsumer() {
 	}
 
 	go func() {
+			tracer := otel.Tracer("consumer")
+
 		for d := range msgs {
-			var msg mq.SeckillMessage
+			ctx := tacer.ExtractAMQPHeaders(context.Background(), d.Headers)
+						ctx, span := tracer.Start(ctx, "ConsumeOrderSeckill")
+						defer span.End()
+						var msg mq.SeckillMessage
 			if err := json.Unmarshal(d.Body, &msg); err != nil {
 				o.logger.Error("fail to parse message", zap.Error(err))
 				d.Nack(false, false)

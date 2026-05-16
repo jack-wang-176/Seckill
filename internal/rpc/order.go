@@ -6,6 +6,7 @@ import (
 
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/loadbalance"
+	kitextracing "github.com/kitex-contrib/obs-opentelemetry/tracing"
 	etcd "github.com/kitex-contrib/registry-etcd"
 	"go.uber.org/zap"
 )
@@ -23,6 +24,7 @@ func InitOrderRpc(cfg *config.EtcdConfig, l *zap.Logger) (orderservice.Client, e
 		"order_service",
 		client.WithResolver(r),
 		client.WithLoadBalancer(loadbalance.NewWeightedRoundRobinBalancer()),
+		client.WithSuite(kitextracing.NewClientSuite()),
 	)
 
 	if err != nil {

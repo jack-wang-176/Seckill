@@ -5,6 +5,9 @@ import (
 	"full_backend_practice/infrastructure/mq"
 
 	"go.uber.org/zap"
+	"context"
+	"full_backend_practice/infrastructure/tacer"
+	"go.opentelemetry.io/otel"
 )
 
 type userConsumer struct {
@@ -41,8 +44,13 @@ func (u *userConsumer) StartRegisterConsumer() {
 		u.Logger.Fatal("MQ consume error", zap.Error(err))
 	}
 	go func() {
+			tracer := otel.Tracer("consumer")
+
 		for d := range msgs {
-			var msg mq.UserMessage
+			ctx := tacer.ExtractAMQPHeaders(context.Background(), d.Headers)
+						ctx, span := tracer.Start(ctx, "ConsumeUserRegister")
+						defer span.End()
+						var msg mq.UserMessage
 			if err := json.Unmarshal(d.Body, &msg); err != nil {
 				u.Logger.Error("fail to parse message", zap.Error(err))
 				d.Nack(false, false)

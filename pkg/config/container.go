@@ -21,6 +21,9 @@ func RegisterConfigProviders(c *dig.Container) error {
 	if err := c.Provide(func() *ServerConfig { return &allCfg.Server }); err != nil {
 		return err
 	}
+	if err := c.Provide(func() *TracerConfig { return &allCfg.Tracer }); err != nil {
+		return err
+	}
 
 	return nil
 }

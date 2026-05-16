@@ -18,3 +18,8 @@ type MySQLConfig struct {
 type EtcdConfig struct {
 	Endpoints []string `mapstructure:"endpoints"`
 }
+
+type TracerConfig struct {
+	Enabled  bool   `mapsturcture:"enabled"`
+	Endpoint string `mapstructure:"endpoint"`
+}

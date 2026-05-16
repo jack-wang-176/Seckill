@@ -17,6 +17,8 @@ import (
 	etcd "github.com/kitex-contrib/registry-etcd"
 	"go.uber.org/dig"
 	"go.uber.org/zap"
+	"full_backend_practice/infrastructure/tacer"
+	kitextracing "github.com/kitex-contrib/obs-opentelemetry/tracing"
 )
 
 func buildContainer() *dig.Container {
@@ -44,8 +46,11 @@ func main() {
 		consumer order.OrderConsumer,
 		serverCfg *config.ServerConfig,
 		etcdCfg *config.EtcdConfig,
+		traceCfg *config.TracerConfig,
 		log *zap.Logger,
 	) error {
+		shutdown := tacer.InitTracer(traceCfg, constant.ServiceNameOrder)
+		defer shutdown()
 		log.Info("Starting Application of order service...")
 		consumer.StartConsumer()
 		log.Info("Order Consumer Started")
@@ -67,6 +72,7 @@ func main() {
 			impl,
 			server.WithServiceAddr(addr),
 			server.WithRegistry(r),
+			server.WithSuite(kitextracing.NewServerSuite()),
 			server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: constant.ServiceNameOrder}),
 		)
 		log.Info("Order Service RPC Server is running on " + addrStr)
