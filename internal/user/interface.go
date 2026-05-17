@@ -17,8 +17,8 @@ type UserConsumer interface {
 }
 
 type UserDatabase interface {
-	RegisterUser(msg mq.UserMessage) error
-	FindUser(msg mq.UserMessage) error
-	CreateUser(msg mq.UserMessage) error
-	LoginUser(username string) (*User, error)
+	RegisterUser(ctx context.Context, msg mq.UserMessage) error
+	FindUser(ctx context.Context, msg mq.UserMessage) error
+	CreateUser(ctx context.Context, msg mq.UserMessage) error
+	LoginUser(ctx context.Context, username string) (*User, error)
 }

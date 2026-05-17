@@ -1,6 +1,7 @@
 package product
 
 import (
+	"context"
 	"full_backend_practice/infrastructure/mq"
 
 	"gorm.io/gorm"
@@ -10,8 +11,8 @@ type productDBWrapper struct {
 	DB *gorm.DB
 }
 
-func NewProductMysql(db *gorm.DB) ProductDatabase {
-	_ = db.AutoMigrate(&Product{})
+func NewProductMysql(db *gorm.DB, ctx context.Context) ProductDatabase {
+	_ = db.WithContext(ctx).AutoMigrate(&Product{})
 	return &productDBWrapper{
 		DB: db,
 	}
@@ -28,18 +29,18 @@ type Product struct {
 	EndTime      int64   `gorm:"type:bigint;not null"`
 }
 
-func (p *productDBWrapper) GetProductList(msg mq.ProductMessage) ([]Product, error) {
+func (p *productDBWrapper) GetProductList(ctx context.Context, msg mq.ProductMessage) ([]Product, error) {
 	var products []Product
-	err := p.DB.Find(&products).Error
+	err := p.DB.WithContext(ctx).Find(&products).Error
 	return products, err
 }
 
-func (p *productDBWrapper) GetProduct(msg mq.ProductMessage) (Product, error) {
+func (p *productDBWrapper) GetProduct(ctx context.Context, msg mq.ProductMessage) (Product, error) {
 	var product Product
-	err := p.DB.Where("id = ?", msg.ProductID).First(&product).Error
+	err := p.DB.WithContext(ctx).Where("id = ?", msg.ProductID).First(&product).Error
 	return product, err
 }
 
-func (p *productDBWrapper) CreateProduct(product *Product) error {
-	return p.DB.Create(product).Error
+func (p *productDBWrapper) CreateProduct(ctx context.Context, product *Product) error {
+	return p.DB.WithContext(ctx).Create(product).Error
 }

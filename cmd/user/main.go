@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net"
 
 	"full_backend_practice/infrastructure/database"
@@ -11,13 +12,14 @@ import (
 	"full_backend_practice/pkg/config"
 	"full_backend_practice/pkg/constant"
 
+	"full_backend_practice/infrastructure/tacer"
+
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
+	kitextracing "github.com/kitex-contrib/obs-opentelemetry/tracing"
 	etcd "github.com/kitex-contrib/registry-etcd"
 	"go.uber.org/dig"
 	"go.uber.org/zap"
-	"full_backend_practice/infrastructure/tacer"
-	kitextracing "github.com/kitex-contrib/obs-opentelemetry/tracing"
 )
 
 func buildContainer() *dig.Container {
@@ -29,6 +31,7 @@ func buildContainer() *dig.Container {
 
 	c.Provide(logger.InitLogger)
 	c.Provide(database.InitMYSQL)
+	c.Provide(func() context.Context { return context.Background() })
 	c.Provide(user.NewUserMysql)
 	c.Provide(database.InitRedis)
 	c.Provide(database.NewRedisWrapper)

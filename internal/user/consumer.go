@@ -59,7 +59,7 @@ func (u *userConsumer) StartRegisterConsumer() {
 					d.Nack(false, false)
 					return
 				}
-				err := u.MR.RegisterUser(msg)
+				err := u.MR.RegisterUser(ctx, msg)
 				if err != nil {
 					if err.Error() == "username already exists" {
 						u.Logger.Warn("注册幂等，用户名已存在", zap.String("username", msg.Username))

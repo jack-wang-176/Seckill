@@ -53,7 +53,7 @@ func (o *orderConsumer) StartConsumer() {
 					return
 				}
 
-				err := o.mysql.SeckillOrder(msg)
+				err := o.mysql.SeckillOrder(ctx, msg)
 
 				if err != nil {
 					o.logger.Error("订单处理失败", zap.String("order_no", msg.OrderNo), zap.Error(err))
@@ -65,7 +65,7 @@ func (o *orderConsumer) StartConsumer() {
 					}
 				} else {
 					//调用sql查询product时间。
-					endTime, err := o.mysql.GetProductEndTime(uint(msg.ProductID))
+					endTime, err := o.mysql.GetProductEndTime(ctx, uint(msg.ProductID))
 					if err != nil {
 						o.logger.Error("Failed to detect product end time", zap.String("order_no", msg.OrderNo), zap.Error(err))
 						d.Nack(false, true)
@@ -79,7 +79,7 @@ func (o *orderConsumer) StartConsumer() {
 
 					d.Ack(false)
 					//调用redis
-					err = o.RedisWrapper.SendSeckillCre(context.Background(), uint(msg.ProductID), uint(msg.UserID), msg.OrderNo)
+					err = o.RedisWrapper.SendSeckillCre(ctx, uint(msg.ProductID), uint(msg.UserID), msg.OrderNo)
 					if err != nil {
 						o.logger.Error("Redis send seckill result error", zap.String("order_no", msg.OrderNo), zap.Error(err))
 					}

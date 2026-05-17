@@ -7,9 +7,9 @@ import (
 )
 
 type ProductDatabase interface {
-	GetProductList(msg mq.ProductMessage) ([]Product, error)
-	GetProduct(msg mq.ProductMessage) (Product, error)
-	CreateProduct(product *Product) error
+	GetProductList(ctx context.Context, msg mq.ProductMessage) ([]Product, error)
+	GetProduct(ctx context.Context, msg mq.ProductMessage) (Product, error)
+	CreateProduct(ctx context.Context, product *Product) error
 }
 
 type ProductServiceImpl interface {

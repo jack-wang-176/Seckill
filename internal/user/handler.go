@@ -12,10 +12,11 @@ import (
 	"full_backend_practice/pkg/response"
 	"full_backend_practice/pkg/token"
 
+	"full_backend_practice/infrastructure/tacer"
+
 	"github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
-	"full_backend_practice/infrastructure/tacer"
 )
 
 type userServiceImpl struct {
@@ -54,9 +55,9 @@ func (s *userServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		Password: string(hash),
 	}
 	headers := amqp091.Table{}
-		tacer.InjectAMQPHeaders(ctx, headers)
+	tacer.InjectAMQPHeaders(ctx, headers)
 
-		body, err := json.Marshal(mqmsg)
+	body, err := json.Marshal(mqmsg)
 	if err != nil {
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, fmt.Sprintf("marshal error: %v", err))
 		return resp, nil
@@ -64,7 +65,7 @@ func (s *userServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 	err = s.MQ.Channel.PublishWithContext(ctx, "", "user_register", false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
-Headers:      headers,
+		Headers:      headers,
 		Body:         body,
 	})
 	if err != nil {
@@ -84,7 +85,7 @@ func (s *userServiceImpl) Login(ctx context.Context, req *user.LoginReq) (resp *
 		return resp, nil
 	}
 
-	u, err := s.MySqlWrapper.LoginUser(req.Username)
+	u, err := s.MySqlWrapper.LoginUser(ctx, req.Username)
 	if err != nil {
 		s.Logger.Warn("login failed: user not found", zap.String("username", req.Username))
 		resp.BaseResp = response.BuildBaseResp(response.CodeUnauthorized, "invalid username or password")

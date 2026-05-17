@@ -10,8 +10,9 @@ import (
 	"full_backend_practice/pkg/constant"
 	"full_backend_practice/pkg/response"
 
-	"github.com/rabbitmq/amqp091-go"
 	"full_backend_practice/infrastructure/tacer"
+
+	"github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
 
@@ -67,11 +68,11 @@ func (s *productServiceImpl) GetProductList(ctx context.Context, req *product.Ge
 		return resp, err
 	}
 	headers := amqp091.Table{}
-		tacer.InjectAMQPHeaders(ctx, headers)
-		err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueProductList, false, false, amqp091.Publishing{
+	tacer.InjectAMQPHeaders(ctx, headers)
+	err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueProductList, false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
-Headers:      headers,
+		Headers:      headers,
 		Body:         body,
 	})
 
@@ -118,11 +119,11 @@ func (s *productServiceImpl) GetProduct(ctx context.Context, req *product.GetPro
 		return resp, err
 	}
 	headers := amqp091.Table{}
-		tacer.InjectAMQPHeaders(ctx, headers)
-		err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueProductSingle, false, false, amqp091.Publishing{
+	tacer.InjectAMQPHeaders(ctx, headers)
+	err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueProductSingle, false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
-Headers:      headers,
+		Headers:      headers,
 		Body:         body,
 	})
 
@@ -161,7 +162,7 @@ func (s *productServiceImpl) CreateProduct(ctx context.Context, req *product.Cre
 		EndTime:      req.EndTime,
 	}
 
-	if err := s.MySqlWrapper.CreateProduct(prod); err != nil {
+	if err := s.MySqlWrapper.CreateProduct(ctx, prod); err != nil {
 		s.Logger.Error("Failed to create product", zap.Error(err))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to create product")
 		return resp, nil
@@ -190,7 +191,7 @@ func (s *productServiceImpl) HeatProduct(ctx context.Context, req *product.HeatP
 	resp = new(product.HeatProductResp)
 	s.Logger.Info("begin to heat product")
 	msg := mq.ProductMessage{}
-	products, err := s.MySqlWrapper.GetProductList(msg)
+	products, err := s.MySqlWrapper.GetProductList(ctx, msg)
 	if err != nil {
 		s.Logger.Error("Failed to load products for preheat", zap.Error(err))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "fail to heat product")

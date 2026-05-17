@@ -1,6 +1,7 @@
 package order
 
 import (
+	"context"
 	"full_backend_practice/infrastructure/mq"
 
 	"gorm.io/gorm"
@@ -25,8 +26,8 @@ func (Product) TableName() string {
 	return "products"
 }
 
-func NewOrderMysql(db *gorm.DB) OrderDatabase {
-	_ = db.AutoMigrate(&Order{})
+func NewOrderMysql(db *gorm.DB, ctx context.Context) OrderDatabase {
+	_ = db.WithContext(ctx).AutoMigrate(&Order{})
 	return &orderDBWrapper{DB: db}
 }
 
@@ -34,8 +35,8 @@ type orderDBWrapper struct {
 	DB *gorm.DB
 }
 
-func (m *orderDBWrapper) SeckillOrder(msg mq.SeckillMessage) error {
-	return m.DB.Transaction(func(tx *gorm.DB) error {
+func (m *orderDBWrapper) SeckillOrder(ctx context.Context, msg mq.SeckillMessage) error {
+	return m.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		res := tx.Model(&Product{}).
 			Where("id = ? AND stock > 0", msg.ProductID).
 			Update("stock", gorm.Expr("stock-1"))
@@ -53,9 +54,9 @@ func (m *orderDBWrapper) SeckillOrder(msg mq.SeckillMessage) error {
 	})
 
 }
-func (m *orderDBWrapper) GetProductEndTime(productID uint) (int64, error) {
+func (m *orderDBWrapper) GetProductEndTime(ctx context.Context, productID uint) (int64, error) {
 	var product Product
-	err := m.DB.Model(&Product{}).Where("id = ?", productID).First(&product).Error
+	err := m.DB.WithContext(ctx).Model(&Product{}).Where("id = ?", productID).First(&product).Error
 	if err != nil {
 		return 0, err
 	}
