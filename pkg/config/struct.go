@@ -20,6 +20,6 @@ type EtcdConfig struct {
 }
 
 type TracerConfig struct {
-	Enabled  bool   `mapsturcture:"enabled"`
+	Enabled  bool   `mapstructure:"enabled"`
 	Endpoint string `mapstructure:"endpoint"`
 }

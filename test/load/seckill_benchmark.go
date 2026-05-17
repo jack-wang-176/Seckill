@@ -240,7 +240,7 @@ func GenerateUserTokens(targetURL string, count int) ([]string, error) {
 
 		// 登录获取令牌（POST JSON）
 		loginBody := map[string]string{"username": username, "password": password}
-		maxAttempts := 3
+		maxAttempts := 30
 		gotToken := false
 		for attempt := 0; attempt < maxAttempts; attempt++ {
 			data, _ := json.Marshal(loginBody)
@@ -279,9 +279,12 @@ func GenerateUserTokens(targetURL string, count int) ([]string, error) {
 				}
 			}
 
-			// 指数退避
+			// 指数退避，带最大上限
 			if attempt < maxAttempts-1 {
 				backoff := time.Duration(100*(1<<attempt)) * time.Millisecond
+				if backoff > 2*time.Second || backoff <= 0 { // 防止溢出和过长的等待
+					backoff = 2 * time.Second
+				}
 				time.Sleep(backoff)
 			}
 		}

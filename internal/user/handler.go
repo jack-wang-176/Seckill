@@ -15,6 +15,7 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+	"full_backend_practice/infrastructure/tacer"
 )
 
 type userServiceImpl struct {
@@ -52,7 +53,10 @@ func (s *userServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		Username: req.Username,
 		Password: string(hash),
 	}
-	body, err := json.Marshal(mqmsg)
+	headers := amqp091.Table{}
+		tacer.InjectAMQPHeaders(ctx, headers)
+
+		body, err := json.Marshal(mqmsg)
 	if err != nil {
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, fmt.Sprintf("marshal error: %v", err))
 		return resp, nil
@@ -60,6 +64,7 @@ func (s *userServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 	err = s.MQ.Channel.PublishWithContext(ctx, "", "user_register", false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
+Headers:      headers,
 		Body:         body,
 	})
 	if err != nil {

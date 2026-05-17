@@ -11,6 +11,7 @@ import (
 	"full_backend_practice/pkg/response"
 
 	"github.com/rabbitmq/amqp091-go"
+	"full_backend_practice/infrastructure/tacer"
 	"go.uber.org/zap"
 )
 
@@ -65,9 +66,12 @@ func (s *productServiceImpl) GetProductList(ctx context.Context, req *product.Ge
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "json marshal error")
 		return resp, err
 	}
-	err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueProductList, false, false, amqp091.Publishing{
+	headers := amqp091.Table{}
+		tacer.InjectAMQPHeaders(ctx, headers)
+		err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueProductList, false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
+Headers:      headers,
 		Body:         body,
 	})
 
@@ -113,9 +117,12 @@ func (s *productServiceImpl) GetProduct(ctx context.Context, req *product.GetPro
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "json marshal error")
 		return resp, err
 	}
-	err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueProductSingle, false, false, amqp091.Publishing{
+	headers := amqp091.Table{}
+		tacer.InjectAMQPHeaders(ctx, headers)
+		err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueProductSingle, false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
+Headers:      headers,
 		Body:         body,
 	})
 

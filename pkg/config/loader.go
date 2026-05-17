@@ -19,7 +19,7 @@ type AllConfig struct {
 	RabbitMQ RabbitMQConfig `mapstructure:"rabbitmq"`
 	Etcd     EtcdConfig     `mapstructure:"etcd"`
 	Server   ServerConfig   `mapstructure:"server"`
-	Tracer   TracerConfig   `mapsturcture:"tracer"`
+	Tracer   TracerConfig   `mapstructure:"tracer"`
 }
 
 type ServerConfig struct {

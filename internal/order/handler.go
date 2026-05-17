@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/rabbitmq/amqp091-go"
+	"full_backend_practice/infrastructure/tacer"
 	"go.uber.org/zap"
 )
 
@@ -82,7 +83,10 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 		ProductID: uint64(req.ProductId),
 		OrderNo:   orderNod,
 	}
-	body, err := json.Marshal(msgStuct)
+	headers := amqp091.Table{}
+		tacer.InjectAMQPHeaders(ctx, headers)
+
+		body, err := json.Marshal(msgStuct)
 	if err != nil {
 		s.Logger.Error("JSON marshal error", zap.Error(err))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "JSON marshal error")
@@ -92,6 +96,7 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueOrderSeckill, false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
+Headers:      headers,
 		Body:         body,
 	})
 

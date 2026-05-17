@@ -52,6 +52,10 @@ func InitRabbitMQ(cfg *config.RabbitMQConfig) *RabbitClient {
 	}
 	ch, err := conn.Channel()
 
+	if err == nil {
+		ch.Qos(200, 0, false)
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}

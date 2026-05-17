@@ -1,3 +1,8 @@
+sed -i '' '/"gorm.io\/gorm"/a\
+\	"time"
+' infrastructure/database/mysql.go
+
+cat << 'INNEREOF' > patch.go
 package database
 
 import (
@@ -34,3 +39,5 @@ func InitMYSQL(cfg *config.MySQLConfig, log *zap.Logger) (*gorm.DB, error) {
 	}
 	return db, nil
 }
+INNEREOF
+mv patch.go infrastructure/database/mysql.go

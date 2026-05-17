@@ -18,3 +18,7 @@ server:
   user_rpc_port: "8889"
   product_rpc_port: "8890"
   order_rpc_port: "8891"
+
+tracer:
+  enabled: true
+  endpoint: localhost:14317
