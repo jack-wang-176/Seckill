@@ -78,7 +78,7 @@ func (o *orderConsumer) StartConsumer() {
 					}
 
 					d.Ack(false)
-					//调用redis
+
 					err = o.RedisWrapper.SendSeckillCre(ctx, uint(msg.ProductID), uint(msg.UserID), msg.OrderNo)
 					if err != nil {
 						o.logger.Error("Redis send seckill result error", zap.String("order_no", msg.OrderNo), zap.Error(err))

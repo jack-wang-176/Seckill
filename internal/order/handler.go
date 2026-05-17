@@ -14,8 +14,12 @@ import (
 	"full_backend_practice/pkg/response"
 	"time"
 
-	"github.com/rabbitmq/amqp091-go"
 	"full_backend_practice/infrastructure/tacer"
+
+	"github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -83,10 +87,16 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 		ProductID: uint64(req.ProductId),
 		OrderNo:   orderNod,
 	}
+	tracer := otel.Tracer("order_service")
+	ctx, span := tracer.Start(ctx, "PublishSeckillMessage", trace.WithAttributes(
+		attribute.Int64("user_id", req.UserId),
+		attribute.Int64("product_id", req.ProductId),
+	))
+	defer span.End()
 	headers := amqp091.Table{}
-		tacer.InjectAMQPHeaders(ctx, headers)
+	tacer.InjectAMQPHeaders(ctx, headers)
 
-		body, err := json.Marshal(msgStuct)
+	body, err := json.Marshal(msgStuct)
 	if err != nil {
 		s.Logger.Error("JSON marshal error", zap.Error(err))
 		resp.BaseResp = response.BuildBaseResp(response.CodeInternal, "JSON marshal error")
@@ -96,7 +106,7 @@ func (s *orderServiceImpl) Seckill(ctx context.Context, req *order.SeckillReq) (
 	err = s.MQ.Channel.PublishWithContext(ctx, "", constant.QueueOrderSeckill, false, false, amqp091.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp091.Persistent,
-Headers:      headers,
+		Headers:      headers,
 		Body:         body,
 	})
 
